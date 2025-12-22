@@ -7,6 +7,7 @@ export interface FilterItem {
     isEnabled: boolean;
     isRegex?: boolean;
     nickname?: string;
+    color?: string;
 }
 
 export interface FilterGroup {

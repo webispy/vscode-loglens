@@ -43,7 +43,22 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
             item.id = element.id;
             item.description = description;
 
-            item.iconPath = element.isEnabled ? new vscode.ThemeIcon('pass-filled') : new vscode.ThemeIcon('circle-large-outline');
+            if (element.isEnabled) {
+                if (element.color) {
+                    // Resolve color: check if it's a preset name, otherwise use as is
+                    const preset = this.filterManager.getPresetByName(element.color);
+                    const fillColor = preset ? preset.icon : element.color;
+
+                    // Create a colored dot icon using SVG data URI
+                    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4" fill="${fillColor}"/></svg>`;
+                    item.iconPath = vscode.Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
+                } else {
+                    item.iconPath = new vscode.ThemeIcon('pass-filled');
+                }
+            } else {
+                item.iconPath = new vscode.ThemeIcon('circle-large-outline');
+            }
+
             return item;
         }
     }

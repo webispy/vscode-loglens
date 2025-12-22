@@ -121,6 +121,11 @@
         "command": "loglens.disableFilter",
         "title": "Disable Filter",
         "icon": "$(pass-filled)"
+      },
+      {
+        "command": "loglens.changeFilterColor",
+        "title": "Change Color",
+        "icon": "$(paintcan)"
       }
     ],
     "menus": {
@@ -175,6 +180,11 @@
         {
           "command": "loglens.deleteFilter",
           "when": "view == loglens-filters || view == loglens-regex-filters",
+          "group": "inline"
+        },
+        {
+          "command": "loglens.changeFilterColor",
+          "when": "view == loglens-filters && (viewItem == filterItemEnabled || viewItem == filterItemDisabled)",
           "group": "inline"
         }
       ]

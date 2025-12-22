@@ -183,6 +183,41 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}));
 
+	// Command: Change Filter Color
+	context.subscriptions.push(vscode.commands.registerCommand('loglens.changeFilterColor', async (item: any) => {
+		// item likely has structure: { groupId, id, ... } from Tree Item context
+
+		const groups = filterManager.getGroups();
+		let targetGroup = groups.find(g => g.filters.some(f => f.id === item.id));
+
+		if (targetGroup) {
+			const presets = filterManager.getColorPresets();
+
+			// Create QuickPickItems with SVG icons for each color
+			const colorItems = presets.map(preset => {
+				const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="${preset.icon}"/></svg>`;
+				const iconUri = vscode.Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
+
+				return {
+					label: preset.name,
+					description: `Dark: ${preset.dark} | Light: ${preset.light}`,
+					iconPath: iconUri,
+					detail: '',
+					picked: false
+				} as vscode.QuickPickItem;
+			});
+
+			const picked = await vscode.window.showQuickPick(colorItems, {
+				placeHolder: 'Select a highlight color',
+				ignoreFocusOut: true
+			});
+
+			if (picked) {
+				filterManager.updateFilterColor(targetGroup.id, item.id, picked.label);
+			}
+		}
+	}));
+
 	// Command: Delete Filter / Group
 	context.subscriptions.push(vscode.commands.registerCommand('loglens.deleteFilter', async (item: FilterGroup | FilterItem) => {
 		if (!item) {
