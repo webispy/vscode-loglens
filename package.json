@@ -53,7 +53,7 @@
         {
           "id": "loglens-container",
           "title": "LogLens",
-          "icon": "$(list-filter)"
+          "icon": "resources/icon.svg"
         }
       ]
     },
