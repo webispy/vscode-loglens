@@ -2,7 +2,7 @@
   "name": "loglens",
   "displayName": "LogLens",
   "description": "High-performance log analyzer with multi-layered filtering, keyword highlighting, and optimized large file support.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": "webispy@gmail.com",
   "publisher": "webispy",
   "icon": "icon.png",
@@ -139,7 +139,7 @@
       },
       {
         "command": "loglens.toggleFilterHighlightMode",
-        "title": "Toggle Full Line Highlight",
+        "title": "Toggle Highlight Mode",
         "icon": "$(arrow-both)"
       },
       {

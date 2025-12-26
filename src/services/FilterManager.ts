@@ -172,7 +172,7 @@ export class FilterManager {
                     delete (filter as any).enableFullLineHighlight;
                 }
 
-                // Cycle: 0 (Word) -> 1 (Line) -> 2 (Full Line) -> 0
+                // Cycle: 0 (Word) -> 1 (Line) -> 2 (Whole Line) -> 0
                 filter.highlightMode = (filter.highlightMode + 1) % 3;
                 this._onDidChangeFilters.fire();
             }
