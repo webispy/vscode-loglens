@@ -4,6 +4,17 @@ All notable changes to the "LogMagnifier" extension will be documented in this f
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.5.0]
+
+### Added
+- **Context Line Feature**: View surrounding log lines for better context.
+- **License**: Added Apache 2.0 LICENSE file.
+
+### Fixed
+- **Icon Visibility**: Resolved transparent background and dark mode visibility issues for icons.
+- **Documentation**: Synced README with current features and removed unused files.
+- **Naming**: Consistent extension renaming to "LogMagnifier".
+
 ## [0.4.0]
 
 ### Added
