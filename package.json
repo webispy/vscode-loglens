@@ -33,10 +33,25 @@
           "default": 50,
           "description": "Maximum file size in MB for opening filtered logs as text documents. Larger files will open in safe mode."
         },
-        "logmagnifier.highlightColor": {
-          "type": "string",
+        "logmagnifier.regexHighlightColor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "light": {
+                  "type": "string"
+                },
+                "dark": {
+                  "type": "string"
+                }
+              }
+            }
+          ],
           "default": "rgba(255, 255, 0, 0.3)",
-          "description": "Background color for log highlights."
+          "description": "Background color for Regex highlight. Can be a color string, a preset name (e.g. 'Red'), or an object with light/dark values."
         },
         "logmagnifier.tempFilePrefix": {
           "type": "string",

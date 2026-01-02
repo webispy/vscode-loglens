@@ -41,7 +41,7 @@ A stream-based log analysis tool for Visual Studio Code, designed to handle larg
 This extension contributes the following settings:
 
 * `logmagnifier.maxFileSizeMB`: Maximum file size in MB for opening filtered logs as text documents. Larger files will open in safe mode. (Default: 50)
-* `logmagnifier.highlightColor`: Background color for log highlights. (Default: `rgba(255, 255, 0, 0.3)`)
+* `logmagnifier.regexHighlightColor`: Background color for Regex highlight. Can be a color string (e.g. `rgba(...)`), a preset name (e.g. `Red`), or an object with `light`/`dark` values. (Default: `rgba(255, 255, 0, 0.3)`)
 * `logmagnifier.tempFilePrefix`: Prefix for the filtered temp files. (Default: `filtered_`)
 * `logmagnifier.statusBarTimeout`: Duration for status bar messages in milliseconds. (Default: 5000)
 * `logmagnifier.enableRegexHighlight`: Enable highlighting for Regex filters in the editor. (Default: `false`)

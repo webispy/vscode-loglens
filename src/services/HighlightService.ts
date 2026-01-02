@@ -14,29 +14,43 @@ export class HighlightService {
         // Initial setup if needed
     }
 
-    private getDecorationType(colorNameOrValue: string, isFullLine: boolean = false): vscode.TextEditorDecorationType {
-        const key = `${colorNameOrValue}_${isFullLine}`;
+    private getDecorationType(colorNameOrValue: string | { light: string, dark: string }, isFullLine: boolean = false): vscode.TextEditorDecorationType {
+        const key = `${typeof colorNameOrValue === 'string' ? colorNameOrValue : JSON.stringify(colorNameOrValue)}_${isFullLine}`;
         if (!this.decorationTypes.has(key)) {
-            const preset = this.filterManager.getPresetByName(colorNameOrValue);
-
             let decorationOptions: vscode.DecorationRenderOptions;
 
-            if (preset) {
+            if (typeof colorNameOrValue === 'string') {
+                const preset = this.filterManager.getPresetByName(colorNameOrValue);
+                if (preset) {
+                    decorationOptions = {
+                        light: {
+                            backgroundColor: preset.light
+                        },
+                        dark: {
+                            backgroundColor: preset.dark
+                        },
+                        color: 'inherit',
+                        fontWeight: 'bold',
+                        isWholeLine: isFullLine
+                    };
+                } else {
+                    // Fallback for custom color string
+                    decorationOptions = {
+                        backgroundColor: colorNameOrValue,
+                        color: 'inherit',
+                        fontWeight: 'bold',
+                        isWholeLine: isFullLine
+                    };
+                }
+            } else {
+                // Object with light/dark values
                 decorationOptions = {
                     light: {
-                        backgroundColor: preset.light
+                        backgroundColor: colorNameOrValue.light
                     },
                     dark: {
-                        backgroundColor: preset.dark
+                        backgroundColor: colorNameOrValue.dark
                     },
-                    color: 'inherit',
-                    fontWeight: 'bold',
-                    isWholeLine: isFullLine
-                };
-            } else {
-                // Fallback for backward compatibility or if it's a raw color value
-                decorationOptions = {
-                    backgroundColor: colorNameOrValue,
                     color: 'inherit',
                     fontWeight: 'bold',
                     isWholeLine: isFullLine
@@ -92,7 +106,7 @@ export class HighlightService {
         this.decorationTypes.forEach((_, key) => rangesByDeco.set(key, []));
 
         // Default highlight color from config if filter has no specific color (backward compatibility)
-        const defaultColor = vscode.workspace.getConfiguration('logmagnifier').get<string>('highlightColor') || 'rgba(255, 255, 0, 0.3)';
+        const defaultColor = vscode.workspace.getConfiguration('logmagnifier').get<string | { light: string, dark: string }>('regexHighlightColor') || 'rgba(255, 255, 0, 0.3)';
 
         includeFilters.forEach(filter => {
             if (!filter.keyword) {
@@ -102,7 +116,7 @@ export class HighlightService {
             const color = filter.color || defaultColor;
             const mode = filter.highlightMode ?? 0;
             const isFullLine = mode === 2;
-            const decoKey = `${color}_${isFullLine}`;
+            const decoKey = `${typeof color === 'string' ? color : JSON.stringify(color)}_${isFullLine}`;
 
             if (!rangesByDeco.has(decoKey)) {
                 rangesByDeco.set(decoKey, []);
@@ -144,7 +158,22 @@ export class HighlightService {
 
         // Apply decorations
         rangesByDeco.forEach((ranges, decoKey) => {
-            const [color, isFullLineStr] = decoKey.split('_');
+            const separatorIndex = decoKey.lastIndexOf('_');
+            const colorStr = decoKey.substring(0, separatorIndex);
+            const isFullLineStr = decoKey.substring(separatorIndex + 1);
+
+            let color: string | { light: string, dark: string };
+            try {
+                // If it starts with {, assume it's a JSON object
+                if (colorStr.startsWith('{')) {
+                    color = JSON.parse(colorStr);
+                } else {
+                    color = colorStr;
+                }
+            } catch (e) {
+                color = colorStr;
+            }
+
             const isFullLine = isFullLineStr === 'true';
             const decorationType = this.getDecorationType(color, isFullLine);
             editor.setDecorations(decorationType, ranges);
