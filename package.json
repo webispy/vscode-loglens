@@ -55,10 +55,10 @@
               }
             },
             "default": {
-              "dark": "rgba(220, 50, 47, 0.4)",
-              "light": "rgba(220, 50, 47, 0.3)"
+              "dark": "rgba(255, 50, 50, 0.5)",
+              "light": "rgba(255, 50, 50, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(220, 50, 47, 0.4)\", \"light\": \"rgba(220, 50, 47, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 50, 50, 0.5)\", \"light\": \"rgba(255, 50, 50, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color02": {
             "type": "object",
@@ -71,10 +71,10 @@
               }
             },
             "default": {
-              "dark": "rgba(38, 139, 210, 0.4)",
-              "light": "rgba(38, 139, 210, 0.3)"
+              "dark": "rgba(0, 180, 180, 0.5)",
+              "light": "rgba(0, 180, 180, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(38, 139, 210, 0.4)\", \"light\": \"rgba(38, 139, 210, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(0, 180, 180, 0.5)\", \"light\": \"rgba(0, 180, 180, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color03": {
             "type": "object",
@@ -87,10 +87,10 @@
               }
             },
             "default": {
-              "dark": "rgba(255, 140, 0, 0.4)",
-              "light": "rgba(255, 140, 0, 0.3)"
+              "dark": "rgba(255, 220, 0, 0.5)",
+              "light": "rgba(255, 220, 0, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 140, 0, 0.4)\", \"light\": \"rgba(255, 140, 0, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 220, 0, 0.5)\", \"light\": \"rgba(255, 220, 0, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color04": {
             "type": "object",
@@ -103,10 +103,10 @@
               }
             },
             "default": {
-              "dark": "rgba(133, 153, 0, 0.4)",
-              "light": "rgba(133, 153, 0, 0.3)"
+              "dark": "rgba(100, 50, 255, 0.5)",
+              "light": "rgba(100, 50, 255, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(133, 153, 0, 0.4)\", \"light\": \"rgba(133, 153, 0, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(100, 50, 255, 0.5)\", \"light\": \"rgba(100, 50, 255, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color05": {
             "type": "object",
@@ -119,10 +119,10 @@
               }
             },
             "default": {
-              "dark": "rgba(108, 113, 196, 0.4)",
-              "light": "rgba(108, 113, 196, 0.3)"
+              "dark": "rgba(255, 140, 0, 0.5)",
+              "light": "rgba(255, 140, 0, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(108, 113, 196, 0.4)\", \"light\": \"rgba(108, 113, 196, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 140, 0, 0.5)\", \"light\": \"rgba(255, 140, 0, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color06": {
             "type": "object",
@@ -135,10 +135,10 @@
               }
             },
             "default": {
-              "dark": "rgba(255, 215, 0, 0.4)",
-              "light": "rgba(255, 215, 0, 0.3)"
+              "dark": "rgba(0, 200, 0, 0.5)",
+              "light": "rgba(0, 200, 0, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 215, 0, 0.4)\", \"light\": \"rgba(255, 215, 0, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(0, 200, 0, 0.5)\", \"light\": \"rgba(0, 200, 0, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color07": {
             "type": "object",
@@ -151,10 +151,10 @@
               }
             },
             "default": {
-              "dark": "rgba(42, 161, 152, 0.4)",
-              "light": "rgba(42, 161, 152, 0.3)"
+              "dark": "rgba(255, 0, 100, 0.5)",
+              "light": "rgba(255, 0, 100, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(42, 161, 152, 0.4)\", \"light\": \"rgba(42, 161, 152, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 0, 100, 0.5)\", \"light\": \"rgba(255, 0, 100, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color08": {
             "type": "object",
@@ -167,10 +167,10 @@
               }
             },
             "default": {
-              "dark": "rgba(255, 0, 255, 0.4)",
-              "light": "rgba(255, 0, 255, 0.3)"
+              "dark": "rgba(100, 150, 255, 0.5)",
+              "light": "rgba(100, 150, 255, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 0, 255, 0.4)\", \"light\": \"rgba(255, 0, 255, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(100, 150, 255, 0.5)\", \"light\": \"rgba(100, 150, 255, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color09": {
             "type": "object",
@@ -183,10 +183,10 @@
               }
             },
             "default": {
-              "dark": "rgba(50, 205, 50, 0.4)",
-              "light": "rgba(50, 205, 50, 0.3)"
+              "dark": "rgba(200, 200, 0, 0.5)",
+              "light": "rgba(200, 200, 0, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(50, 205, 50, 0.4)\", \"light\": \"rgba(50, 205, 50, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(200, 200, 0, 0.5)\", \"light\": \"rgba(200, 200, 0, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color10": {
             "type": "object",
@@ -199,10 +199,10 @@
               }
             },
             "default": {
-              "dark": "rgba(75, 0, 130, 0.4)",
-              "light": "rgba(75, 0, 130, 0.2)"
+              "dark": "rgba(200, 0, 200, 0.5)",
+              "light": "rgba(200, 0, 200, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(75, 0, 130, 0.4)\", \"light\": \"rgba(75, 0, 130, 0.2)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(200, 0, 200, 0.5)\", \"light\": \"rgba(200, 0, 200, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color11": {
             "type": "object",
@@ -215,10 +215,10 @@
               }
             },
             "default": {
-              "dark": "rgba(255, 105, 180, 0.4)",
-              "light": "rgba(255, 105, 180, 0.3)"
+              "dark": "rgba(0, 255, 200, 0.5)",
+              "light": "rgba(0, 255, 200, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 105, 180, 0.4)\", \"light\": \"rgba(255, 105, 180, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(0, 255, 200, 0.5)\", \"light\": \"rgba(0, 255, 200, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color12": {
             "type": "object",
@@ -231,10 +231,10 @@
               }
             },
             "default": {
-              "dark": "rgba(0, 150, 136, 0.4)",
-              "light": "rgba(0, 150, 136, 0.3)"
+              "dark": "rgba(255, 100, 0, 0.5)",
+              "light": "rgba(255, 100, 0, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(0, 150, 136, 0.4)\", \"light\": \"rgba(0, 150, 136, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 100, 0, 0.5)\", \"light\": \"rgba(255, 100, 0, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color13": {
             "type": "object",
@@ -247,10 +247,10 @@
               }
             },
             "default": {
-              "dark": "rgba(139, 69, 19, 0.4)",
-              "light": "rgba(139, 69, 19, 0.3)"
+              "dark": "rgba(0, 100, 255, 0.5)",
+              "light": "rgba(0, 100, 255, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(139, 69, 19, 0.4)\", \"light\": \"rgba(139, 69, 19, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(0, 100, 255, 0.5)\", \"light\": \"rgba(0, 100, 255, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color14": {
             "type": "object",
@@ -263,10 +263,10 @@
               }
             },
             "default": {
-              "dark": "rgba(0, 191, 255, 0.4)",
-              "light": "rgba(0, 191, 255, 0.3)"
+              "dark": "rgba(100, 255, 100, 0.5)",
+              "light": "rgba(100, 255, 100, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(0, 191, 255, 0.4)\", \"light\": \"rgba(0, 191, 255, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(100, 255, 100, 0.5)\", \"light\": \"rgba(100, 255, 100, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color15": {
             "type": "object",
@@ -279,10 +279,10 @@
               }
             },
             "default": {
-              "dark": "rgba(106, 90, 205, 0.4)",
-              "light": "rgba(106, 90, 205, 0.3)"
+              "dark": "rgba(180, 100, 255, 0.5)",
+              "light": "rgba(180, 100, 255, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(106, 90, 205, 0.4)\", \"light\": \"rgba(106, 90, 205, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(180, 100, 255, 0.5)\", \"light\": \"rgba(180, 100, 255, 0.4)\" }`"
           },
           "logmagnifier.highlightColors.color16": {
             "type": "object",
@@ -295,10 +295,10 @@
               }
             },
             "default": {
-              "dark": "rgba(46, 204, 113, 0.4)",
-              "light": "rgba(46, 204, 113, 0.3)"
+              "dark": "rgba(255, 100, 150, 0.5)",
+              "light": "rgba(255, 100, 150, 0.4)"
             },
-            "markdownDescription": "Default `{ \"dark\": \"rgba(46, 204, 113, 0.4)\", \"light\": \"rgba(46, 204, 113, 0.3)\" }`"
+            "markdownDescription": "Default `{ \"dark\": \"rgba(255, 100, 150, 0.5)\", \"light\": \"rgba(255, 100, 150, 0.4)\" }`"
           }
         }
       },

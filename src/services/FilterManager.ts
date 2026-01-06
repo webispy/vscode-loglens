@@ -11,22 +11,22 @@ export interface ColorPreset {
 
 // Default color presets if configuration is missing
 const DEFAULT_COLOR_PRESETS: ColorPreset[] = [
-    { id: 'color01', dark: 'rgba(220, 50, 47, 0.4)', light: 'rgba(220, 50, 47, 0.3)' }, // Red
-    { id: 'color02', dark: 'rgba(38, 139, 210, 0.4)', light: 'rgba(38, 139, 210, 0.3)' }, // Blue
-    { id: 'color03', dark: 'rgba(255, 140, 0, 0.4)', light: 'rgba(255, 140, 0, 0.3)' }, // Orange
-    { id: 'color04', dark: 'rgba(133, 153, 0, 0.4)', light: 'rgba(133, 153, 0, 0.3)' }, // Green
-    { id: 'color05', dark: 'rgba(108, 113, 196, 0.4)', light: 'rgba(108, 113, 196, 0.3)' }, // Violet
-    { id: 'color06', dark: 'rgba(255, 215, 0, 0.4)', light: 'rgba(255, 215, 0, 0.3)' }, // Yellow
-    { id: 'color07', dark: 'rgba(42, 161, 152, 0.4)', light: 'rgba(42, 161, 152, 0.3)' }, // Cyan
-    { id: 'color08', dark: 'rgba(255, 0, 255, 0.4)', light: 'rgba(255, 0, 255, 0.3)' }, // Magenta
-    { id: 'color09', dark: 'rgba(50, 205, 50, 0.4)', light: 'rgba(50, 205, 50, 0.3)' }, // Lime
-    { id: 'color10', dark: 'rgba(75, 0, 130, 0.4)', light: 'rgba(75, 0, 130, 0.2)' }, // Indigo
-    { id: 'color11', dark: 'rgba(255, 105, 180, 0.4)', light: 'rgba(255, 105, 180, 0.3)' }, // Pink
-    { id: 'color12', dark: 'rgba(0, 150, 136, 0.4)', light: 'rgba(0, 150, 136, 0.3)' }, // Teal
-    { id: 'color13', dark: 'rgba(139, 69, 19, 0.4)', light: 'rgba(139, 69, 19, 0.3)' }, // Brown
-    { id: 'color14', dark: 'rgba(0, 191, 255, 0.4)', light: 'rgba(0, 191, 255, 0.3)' }, // Sky
-    { id: 'color15', dark: 'rgba(106, 90, 205, 0.4)', light: 'rgba(106, 90, 205, 0.3)' }, // Slate
-    { id: 'color16', dark: 'rgba(46, 204, 113, 0.4)', light: 'rgba(46, 204, 113, 0.3)' }  // Emerald
+    { id: 'color01', dark: 'rgba(255, 50, 50, 0.5)', light: 'rgba(255, 50, 50, 0.4)' },      // Bright Red
+    { id: 'color02', dark: 'rgba(0, 180, 180, 0.5)', light: 'rgba(0, 180, 180, 0.4)' },      // Dark Cyan
+    { id: 'color03', dark: 'rgba(255, 220, 0, 0.5)', light: 'rgba(255, 220, 0, 0.4)' },      // Gold
+    { id: 'color04', dark: 'rgba(100, 50, 255, 0.5)', light: 'rgba(100, 50, 255, 0.4)' },    // Blue Violet
+    { id: 'color05', dark: 'rgba(255, 140, 0, 0.5)', light: 'rgba(255, 140, 0, 0.4)' },      // Dark Orange
+    { id: 'color06', dark: 'rgba(0, 200, 0, 0.5)', light: 'rgba(0, 200, 0, 0.4)' },          // Pure Green
+    { id: 'color07', dark: 'rgba(255, 0, 100, 0.5)', light: 'rgba(255, 0, 100, 0.4)' },      // Deep Pink
+    { id: 'color08', dark: 'rgba(100, 150, 255, 0.5)', light: 'rgba(100, 150, 255, 0.4)' },  // Cornflower Blue
+    { id: 'color09', dark: 'rgba(200, 200, 0, 0.5)', light: 'rgba(200, 200, 0, 0.4)' },      // Olive
+    { id: 'color10', dark: 'rgba(200, 0, 200, 0.5)', light: 'rgba(200, 0, 200, 0.4)' },     // Magenta
+    { id: 'color11', dark: 'rgba(0, 255, 200, 0.5)', light: 'rgba(0, 255, 200, 0.4)' },     // Aqua
+    { id: 'color12', dark: 'rgba(255, 100, 0, 0.5)', light: 'rgba(255, 100, 0, 0.4)' },     // Orange Red
+    { id: 'color13', dark: 'rgba(0, 100, 255, 0.5)', light: 'rgba(0, 100, 255, 0.4)' },     // Royal Blue
+    { id: 'color14', dark: 'rgba(100, 255, 100, 0.5)', light: 'rgba(100, 255, 100, 0.4)' }, // Light Green
+    { id: 'color15', dark: 'rgba(180, 100, 255, 0.5)', light: 'rgba(180, 100, 255, 0.4)' }, // Medium Purple
+    { id: 'color16', dark: 'rgba(255, 100, 150, 0.5)', light: 'rgba(255, 100, 150, 0.4)' }  // Pink Salmon
 ];
 
 function generateId(): string {
