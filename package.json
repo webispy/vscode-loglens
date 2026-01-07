@@ -2,7 +2,7 @@
   "name": "logmagnifier",
   "displayName": "LogMagnifier",
   "description": "A powerful log analysis tool for Visual Studio Code, featuring advanced log filtering and diverse highlighting options.",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "author": "webispy@gmail.com",
   "publisher": "webispy",
   "icon": "icon.png",

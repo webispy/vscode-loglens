@@ -4,6 +4,24 @@ All notable changes to the "LogMagnifier" extension will be documented in this f
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.9.0]
+
+### Added
+- **Filter Types**: Added toggle for include/exclude filter types.
+- **Context Menu**: Added "Add Selection to LogMagnifier" context menu command.
+- **Export**: Included version in exported JSON.
+
+### Changed
+- **UI**: Enabled cross-group filter movement.
+- **UX**: Simplified word filter creation workflow.
+
+### Fixed
+- **Filters**: Removed background color for exclude filters.
+
+### Refactored
+- **Codebase**: Centralized configuration keys.
+- **Performance**: Optimized LogProcessor and fixed highlight sync.
+
 ## [0.8.0]
 
 ### Added
