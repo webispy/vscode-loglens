@@ -20,7 +20,8 @@ export class CommandManager {
         private resultCountService: ResultCountService,
         private logProcessor: LogProcessor,
         private quickAccessProvider: QuickAccessProvider,
-        private logger: Logger
+        private logger: Logger,
+        private wordTreeView: vscode.TreeView<FilterGroup | FilterItem>
     ) {
         this.registerCommands();
         // Initialize context key
@@ -106,6 +107,84 @@ export class CommandManager {
             const filter = this.filterManager.addFilter(targetGroupId, pattern, Constants.FilterTypes.Include as FilterType, true, nickname);
             if (!filter) {
                 vscode.window.showErrorMessage(`Regex Filter with pattern '${pattern}' or nickname '${nickname}' already exists in this group.`);
+            }
+        }));
+
+        // Command: Add Selection to Filter
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.addSelectionToFilter', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor || editor.selection.isEmpty) {
+                vscode.window.showInformationMessage('Please select some text first.');
+                return;
+            }
+
+            const selectedText = editor.document.getText(editor.selection).trim();
+            if (!selectedText) {
+                return;
+            }
+
+            // Check for focused group in Word Search view
+            const focusedItem = this.wordTreeView.selection[0];
+            let targetGroupId: string | undefined;
+
+            if (focusedItem) {
+                // Determine group ID from focused item
+                if ((focusedItem as FilterGroup).filters !== undefined) {
+                    // It is a group
+                    targetGroupId = focusedItem.id;
+                } else {
+                    // It is an item, find its parent group
+                    const parentGroup = this.filterManager.getGroups().find(g => g.filters.some(f => f.id === focusedItem.id));
+                    if (parentGroup) {
+                        targetGroupId = parentGroup.id;
+                    }
+                }
+            }
+
+            if (targetGroupId) {
+                // Add to existing group
+                // Check if it's a regex group.
+                // Requirement implies "Word filters".
+                const targetGroup = this.filterManager.getGroups().find(g => g.id === targetGroupId);
+                if (targetGroup) {
+                    if (targetGroup.isRegex) {
+                        // Cannot add simple text selection to regex group as-is.
+                        // Assume we only target Word Filter groups context.
+                        targetGroupId = undefined;
+                    } else {
+                        // Check for duplicate keyword regardless of type
+                        const existingFilter = targetGroup.filters.find(f => f.keyword.toLowerCase() === selectedText.toLowerCase());
+                        if (existingFilter) {
+                            vscode.window.showErrorMessage(`Filter '${selectedText}' already exists in group '${targetGroup.name}'.`);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (!targetGroupId) {
+                // Create new group with keyword name
+                // If group doesn't exist, create it.
+                const newGroup = this.filterManager.addGroup(selectedText, false);
+                if (newGroup) {
+                    targetGroupId = newGroup.id;
+                } else {
+                    // Group with same name exists.
+                    const existingGroup = this.filterManager.getGroups().find(g => g.name === selectedText && !g.isRegex);
+                    if (existingGroup) {
+                        targetGroupId = existingGroup.id;
+                        // Check for duplicate in this existing group as well, just in case
+                        const existingFilter = existingGroup.filters.find(f => f.keyword.toLowerCase() === selectedText.toLowerCase());
+                        if (existingFilter) {
+                            vscode.window.showErrorMessage(`Filter '${selectedText}' already exists in group '${existingGroup.name}'.`);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (targetGroupId) {
+                this.filterManager.addFilter(targetGroupId, selectedText, Constants.FilterTypes.Include as FilterType, false);
             }
         }));
 

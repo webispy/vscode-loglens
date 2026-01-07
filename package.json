@@ -618,6 +618,11 @@
         "command": "logmagnifier.importRegexFilters",
         "title": "Import Regex Filters",
         "icon": "$(repo-pull)"
+      },
+      {
+        "command": "logmagnifier.addSelectionToFilter",
+        "title": "Add Selection to LogMagnifier",
+        "icon": "$(plus)"
       }
     ],
     "menus": {
@@ -671,6 +676,13 @@
           "command": "logmagnifier.applyRegexFilter",
           "when": "view == logmagnifier-regex-filters",
           "group": "navigation@5"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "logmagnifier.addSelectionToFilter",
+          "when": "editorHasSelection",
+          "group": "1_modification"
         }
       ],
       "view/item/context": [

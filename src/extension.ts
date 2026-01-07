@@ -23,11 +23,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let lastProcessedDoc: vscode.TextDocument | undefined;
 
-	// Initialize Command Manager (Handles all command registrations)
-	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, quickAccessProvider, logger);
+	const wordTreeView = vscode.window.createTreeView('logmagnifier-filters', { treeDataProvider: wordTreeDataProvider, dragAndDropController: wordTreeDataProvider });
+	const regexTreeView = vscode.window.createTreeView('logmagnifier-regex-filters', { treeDataProvider: regexTreeDataProvider, dragAndDropController: regexTreeDataProvider });
 
-	vscode.window.createTreeView('logmagnifier-filters', { treeDataProvider: wordTreeDataProvider, dragAndDropController: wordTreeDataProvider });
-	vscode.window.createTreeView('logmagnifier-regex-filters', { treeDataProvider: regexTreeDataProvider, dragAndDropController: regexTreeDataProvider });
+	// Initialize Command Manager (Handles all command registrations)
+	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, quickAccessProvider, logger, wordTreeView);
+
 	vscode.window.createTreeView('logmagnifier-quick-access', { treeDataProvider: quickAccessProvider });
 
 	// Update highlights and counts when active editor changes
