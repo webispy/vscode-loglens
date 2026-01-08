@@ -588,10 +588,31 @@ export class CommandManager {
 
         // Command: Toggle Word Wrap
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ToggleWordWrap, async () => {
-            const config = vscode.workspace.getConfiguration(Constants.Configuration.Editor.Section);
-            const current = config.get<string>(Constants.Configuration.Editor.WordWrap);
-            const newValue = (current === 'on' || current === 'bounded' || current === 'wordWrapColumn') ? 'off' : 'on';
-            await config.update(Constants.Configuration.Editor.WordWrap, newValue, vscode.ConfigurationTarget.Global);
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                return;
+            }
+
+            const scope = editor.document.uri;
+
+            // Determine current state (considering transient state)
+            const currentEffective = this.quickAccessProvider.getWordWrapState(scope);
+
+            // Toggle it using the built-in command which is per-editor and transient
+            await vscode.commands.executeCommand('editor.action.toggleWordWrap');
+
+            // After toggle, we need to know what the new state is to update our provider.
+            // Since we can't reliably know what Alt+Z did immediately without reading config again,
+            // but the config WON'T change because it's transient.
+            // The only way to track this is to toggle our own internal state.
+            // Default VS Code behavior for toggleWordWrap:
+            // If current is 'off' -> 'on'
+            // If current is 'on'/'bounded'/'wordWrapColumn' -> 'off'
+
+            const newValue = (currentEffective === 'on' || currentEffective === 'bounded' || currentEffective === 'wordWrapColumn') ? 'off' : 'on';
+            this.quickAccessProvider.setTransientWordWrapState(scope.toString(), newValue);
+
+            this.logger.info(`Word Wrap toggled for ${scope.toString()} to ${newValue}`);
         }));
 
         // Command: Toggle Minimap

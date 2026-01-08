@@ -7,9 +7,25 @@ export class QuickAccessProvider implements vscode.TreeDataProvider<vscode.TreeI
     private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
+    private _transientWordWrapStates: Map<string, string> = new Map();
+
     refresh(): void {
         Logger.getInstance().info('QuickAccessProvider.refresh() called');
         this._onDidChangeTreeData.fire();
+    }
+
+    public setTransientWordWrapState(uri: string, value: string): void {
+        this._transientWordWrapStates.set(uri, value);
+        this.refresh();
+    }
+
+    public getWordWrapState(uri: vscode.Uri): string {
+        const transient = this._transientWordWrapStates.get(uri.toString());
+        if (transient !== undefined) {
+            return transient;
+        }
+        const config = vscode.workspace.getConfiguration('editor', uri);
+        return config.get<string>('wordWrap') || 'off';
     }
 
     getTreeItem(element: vscode.TreeItem): vscode.TreeItem {
@@ -22,11 +38,18 @@ export class QuickAccessProvider implements vscode.TreeDataProvider<vscode.TreeI
         }
 
         // Use active text editor config scope if available, otherwise global
-        const scope = vscode.window.activeTextEditor?.document.uri;
+        const activeEditor = vscode.window.activeTextEditor;
+        const scope = activeEditor?.document.uri;
         const config = vscode.workspace.getConfiguration('editor', scope);
 
-        const wordWrap = config.get<string>('wordWrap');
-        Logger.getInstance().info(`Word Wrap state: ${wordWrap}`);
+        // Check for transient state first
+        let wordWrap = scope ? this._transientWordWrapStates.get(scope.toString()) : undefined;
+
+        if (wordWrap === undefined) {
+            wordWrap = config.get<string>('wordWrap');
+        }
+
+        Logger.getInstance().info(`Word Wrap state for ${scope?.toString() || 'global'}: ${wordWrap}`);
         const isWordWrapOn = wordWrap !== 'off';
 
         const minimapEnabled = config.get<boolean>('minimap.enabled');
