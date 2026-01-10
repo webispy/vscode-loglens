@@ -105,6 +105,9 @@ export const Constants = {
         ImportWordFilters: 'logmagnifier.importWordFilters',
         ExportRegexFilters: 'logmagnifier.exportRegexFilters',
         ImportRegexFilters: 'logmagnifier.importRegexFilters',
+        ManageProfiles: 'logmagnifier.manageProfiles',
+
+        // ... (existing commands)
     },
 
     Views: {
@@ -144,6 +147,8 @@ export const Constants = {
         EnterFilterGroupName: 'Enter Word Filter Group Name',
         EnterRegexFilterGroupName: 'Enter Regex Filter Group Name',
         SelectImportMode: 'Select import mode',
+        EnterProfileName: 'Enter Profile Name',
+        SelectProfileFromList: 'Select a Profile',
     },
 
     FilterTypes: {
@@ -157,6 +162,8 @@ export const Constants = {
 
     GlobalState: {
         FilterGroups: 'logmagnifier.filterGroups',
+        FilterProfiles: 'logmagnifier.filterProfiles',
+        ActiveProfile: 'logmagnifier.activeProfile',
     },
 
     Labels: {
@@ -169,6 +176,7 @@ export const Constants = {
         KB: 'KB',
         MB: 'MB',
         NA: 'N/A',
+        DefaultProfile: 'Default',
     },
 
     ImportModes: {

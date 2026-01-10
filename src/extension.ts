@@ -12,7 +12,7 @@ import { CommandManager } from './services/CommandManager';
 export function activate(context: vscode.ExtensionContext) {
 	const filterManager = new FilterManager(context);
 
-	const quickAccessProvider = new QuickAccessProvider();
+	const quickAccessProvider = new QuickAccessProvider(filterManager);
 	const logProcessor = new LogProcessor();
 	const logger = Logger.getInstance();
 	logger.info('LogMagnifier activated');

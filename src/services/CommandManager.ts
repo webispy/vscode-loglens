@@ -667,6 +667,128 @@ export class CommandManager {
         // Command: Apply Filter (Word/Regex)
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ApplyWordFilter, () => this.applyFilter('word')));
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ApplyRegexFilter, () => this.applyFilter('regex')));
+
+        // Command: Manage Profiles
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ManageProfiles, async () => {
+            const activeProfile = this.filterManager.getActiveProfile();
+            const profilesMetadata = this.filterManager.getProfilesMetadata();
+
+            const quickPick = vscode.window.createQuickPick();
+            quickPick.placeholder = `Manage Profiles (Current: ${activeProfile})`;
+            quickPick.ignoreFocusOut = true;
+
+            const updateItems = () => {
+                const items: vscode.QuickPickItem[] = [];
+
+                // Action: New Profile
+                items.push({
+                    label: '$(plus) New Profile...',
+                    description: 'Create a new empty profile'
+                });
+
+                // Action: Duplicate (Clone)
+                items.push({
+                    label: '$(copy) Duplicate Profile...',
+                    description: 'Make a copy of the current profile'
+                });
+
+                items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
+
+                // List Profiles
+                const profileItems = profilesMetadata.map(p => {
+                    return {
+                        label: p.name === activeProfile ? `$(check) ${p.name}` : p.name,
+                        description: p.name === activeProfile
+                            ? `Active (Word: ${p.wordCount}, Regex: ${p.regexCount})`
+                            : `(Word: ${p.wordCount}, Regex: ${p.regexCount})`,
+                        detail: 'Switch to this profile',
+                        buttons: p.name === Constants.Labels.DefaultProfile ? [] : [
+                            {
+                                iconPath: new vscode.ThemeIcon('trash'),
+                                tooltip: 'Delete Profile'
+                            }
+                        ]
+                    } as vscode.QuickPickItem;
+                });
+
+                items.push(...profileItems);
+                quickPick.items = items;
+            };
+
+            updateItems();
+
+            quickPick.onDidTriggerItemButton(async e => {
+                const profileName = e.item.label.replace('$(check) ', '').trim();
+
+                // Confirm deletion
+                const confirm = await vscode.window.showWarningMessage(
+                    `Are you sure you want to delete profile '${profileName}'?`,
+                    { modal: true },
+                    'Delete'
+                );
+
+                if (confirm === 'Delete') {
+                    await this.filterManager.deleteProfile(profileName);
+                    vscode.window.showInformationMessage(`Profile '${profileName}' deleted.`);
+
+                    // Refresh list
+                    quickPick.hide();
+                    vscode.commands.executeCommand(Constants.Commands.ManageProfiles);
+                }
+            });
+
+            quickPick.onDidChangeSelection(async selection => {
+                if (selection[0]) {
+                    const label = selection[0].label;
+
+                    if (label.includes('New Profile')) {
+                        quickPick.hide();
+                        const name = await vscode.window.showInputBox({
+                            prompt: 'Enter name for new profile',
+                            validateInput: (value) => {
+                                if (profilesMetadata.some(p => p.name === value)) {
+                                    return 'Profile with this name already exists';
+                                }
+                                return null;
+                            }
+                        });
+                        if (name) {
+                            const success = await this.filterManager.createProfile(name);
+                            if (success) {
+                                vscode.window.showInformationMessage(`Profile '${name}' created and activated.`);
+                            } else {
+                                vscode.window.showErrorMessage(`Failed to create profile '${name}'.`);
+                            }
+                        }
+
+                    } else if (label.includes('Duplicate Profile')) {
+                        quickPick.hide();
+                        const name = await vscode.window.showInputBox({
+                            prompt: 'Enter name for duplicated profile',
+                            value: `${activeProfile} (Copy)`
+                        });
+                        if (name) {
+                            await this.filterManager.saveProfile(name);
+                            vscode.window.showInformationMessage(`Profile duplicated as '${name}'.`);
+                        }
+
+                    } else {
+                        // Switch Profile
+                        const profileName = label.replace('$(check) ', '').trim();
+                        if (profileName !== activeProfile) {
+                            quickPick.hide();
+                            await this.filterManager.loadProfile(profileName);
+                            vscode.window.showInformationMessage(`Switched to profile '${profileName}'.`);
+                        } else {
+                            // Already active
+                            quickPick.hide();
+                        }
+                    }
+                }
+            });
+
+            quickPick.show();
+        }));
     }
 
     private handleFilterToggle(item: FilterItem, action: 'enable' | 'disable' | 'toggle') {

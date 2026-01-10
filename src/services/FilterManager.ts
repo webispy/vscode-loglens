@@ -10,6 +10,12 @@ export interface ColorPreset {
     light: string;
 }
 
+export interface FilterProfile {
+    name: string;
+    groups: FilterGroup[];
+    updatedAt: number;
+}
+
 function generateId(): string {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
@@ -22,6 +28,9 @@ export class FilterManager {
 
     private _onDidChangeResultCounts: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
     readonly onDidChangeResultCounts: vscode.Event<void> = this._onDidChangeResultCounts.event;
+
+    private _onDidChangeProfile: vscode.EventEmitter<void> = new vscode.EventEmitter<void>();
+    readonly onDidChangeProfile: vscode.Event<void> = this._onDidChangeProfile.event;
 
     private logger: Logger;
 
@@ -48,8 +57,30 @@ export class FilterManager {
         }
     }
 
-    private saveToState() {
-        this.context.globalState.update(Constants.GlobalState.FilterGroups, this.groups);
+    private async saveToState() {
+        // 1. Save to current session state (FilterGroups) - this ensures reload restoration
+        await this.context.globalState.update(Constants.GlobalState.FilterGroups, this.groups);
+
+        // 2. Auto-save to Active Profile (including Default)
+        const activeProfileName = this.getActiveProfile();
+        await this.updateProfileData(activeProfileName, this.groups);
+    }
+
+    private async updateProfileData(name: string, groups: FilterGroup[]) {
+        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
+        const index = profiles.findIndex(p => p.name === name);
+        if (index !== -1) {
+            profiles[index].groups = JSON.parse(JSON.stringify(groups)); // Deep copy
+            profiles[index].updatedAt = Date.now();
+        } else {
+            // New profile or Default profile being saved for the first time
+            profiles.push({
+                name,
+                groups: JSON.parse(JSON.stringify(groups)),
+                updatedAt: Date.now()
+            });
+        }
+        await this.context.globalState.update(Constants.GlobalState.FilterProfiles, profiles);
     }
 
     private loadColorPresets() {
@@ -692,4 +723,172 @@ export class FilterManager {
             this._onDidChangeResultCounts.fire();
         }
     }
+
+    // Profile Management
+
+    public getActiveProfile(): string {
+        return this.context.globalState.get<string>(Constants.GlobalState.ActiveProfile) || Constants.Labels.DefaultProfile;
+    }
+
+    public getProfileNames(): string[] {
+        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
+        const names = profiles.map(p => p.name);
+        if (!names.includes(Constants.Labels.DefaultProfile)) {
+            names.unshift(Constants.Labels.DefaultProfile);
+        }
+        return names.sort((a, b) => {
+            if (a === Constants.Labels.DefaultProfile) { return -1; }
+            if (b === Constants.Labels.DefaultProfile) { return 1; }
+            return a.localeCompare(b);
+        });
+    }
+
+    public getProfilesMetadata(): { name: string, wordCount: number, regexCount: number }[] {
+        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
+
+        // Check if Default is present
+        const hasDefault = profiles.some(p => p.name === Constants.Labels.DefaultProfile);
+        let metadata = profiles.map(p => ({
+            name: p.name,
+            wordCount: p.groups.filter(g => !g.isRegex).length,
+            regexCount: p.groups.filter(g => g.isRegex).length
+        }));
+
+        if (!hasDefault) {
+            metadata.unshift({ name: Constants.Labels.DefaultProfile, wordCount: 1, regexCount: 0 });
+        }
+
+        return metadata.sort((a, b) => {
+            if (a.name === Constants.Labels.DefaultProfile) { return -1; }
+            if (b.name === Constants.Labels.DefaultProfile) { return 1; }
+            return a.name.localeCompare(b.name);
+        });
+    }
+
+    public async deleteProfile(name: string): Promise<boolean> {
+        if (name === Constants.Labels.DefaultProfile) {
+            this.logger.warn("Cannot delete Default profile.");
+            return false;
+        }
+
+        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
+        const index = profiles.findIndex(p => p.name === name);
+        if (index !== -1) {
+            profiles.splice(index, 1);
+            await this.context.globalState.update(Constants.GlobalState.FilterProfiles, profiles);
+
+            // If active was deleted, switch to Default
+            if (this.getActiveProfile() === name) {
+                await this.loadProfile(Constants.Labels.DefaultProfile);
+            }
+
+            this.logger.info(`Profile deleted: ${name}`);
+            return true;
+        }
+        return false;
+    }
+
+    public async saveProfile(name: string): Promise<void> {
+        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
+        const existingIndex = profiles.findIndex(p => p.name === name);
+
+        // Create deep copy of current groups
+        const groupsCopy = JSON.parse(JSON.stringify(this.groups));
+
+        const newProfile: FilterProfile = {
+            name,
+            groups: groupsCopy,
+            updatedAt: Date.now()
+        };
+
+        if (existingIndex !== -1) {
+            profiles[existingIndex] = newProfile;
+        } else {
+            profiles.push(newProfile);
+        }
+
+        await this.context.globalState.update(Constants.GlobalState.FilterProfiles, profiles);
+        await this.context.globalState.update(Constants.GlobalState.ActiveProfile, name);
+        this._onDidChangeProfile.fire();
+        this.logger.info(`Profile saved: ${name}`);
+    }
+
+    public async createProfile(name: string): Promise<boolean> {
+        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
+        if (profiles.some(p => p.name === name)) {
+            return false;
+        }
+
+        // Initialize with default filters for new profile
+        // Temporary reset groups to defaults to get the structure, then save
+        const tempGroups: FilterGroup[] = [];
+        // We can reuse initDefaultFilters logic but it works on 'this.groups'.
+        // Let's just create a blank state or use initDefaultFilters logic on a temp array.
+        // Actually, easiest way is:
+        // 1. Save current groups to current profile? (Already handled by auto-save if we were in one)
+        // 2. Reset this.groups = []
+        // 3. Run initDefaultFilters()
+        // 4. Save as new profile
+
+        this.groups = [];
+        this.initDefaultFilters(); // Adds presets
+
+        // Save this new state as the new profile
+        const newProfile: FilterProfile = {
+            name,
+            groups: JSON.parse(JSON.stringify(this.groups)),
+            updatedAt: Date.now()
+        };
+
+        profiles.push(newProfile);
+        await this.context.globalState.update(Constants.GlobalState.FilterProfiles, profiles);
+        await this.context.globalState.update(Constants.GlobalState.ActiveProfile, name);
+
+        this.saveToState(); // Saves to GlobalState.FilterGroups
+        this._onDidChangeFilters.fire();
+        this._onDidChangeProfile.fire();
+        this.logger.info(`Created new profile: ${name}`);
+
+        return true;
+    }
+
+    public async loadProfile(name: string): Promise<boolean> {
+        // Special handling for Default if it's not saved explicitly
+        if (name === Constants.Labels.DefaultProfile) {
+            const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
+            const profile = profiles.find(p => p.name === name);
+
+            if (profile) {
+                this.groups = JSON.parse(JSON.stringify(profile.groups));
+            } else {
+                // Reset to factory defaults
+                this.groups = [];
+                this.initDefaultFilters();
+            }
+
+            await this.context.globalState.update(Constants.GlobalState.ActiveProfile, name);
+            this.saveToState();
+            this._onDidChangeFilters.fire();
+            this._onDidChangeProfile.fire();
+            this.logger.info(`Switched to profile: ${name}`);
+            return true;
+        }
+
+        const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
+        const profile = profiles.find(p => p.name === name);
+
+        if (profile) {
+            // Deep copy to separate from stored profile
+            this.groups = JSON.parse(JSON.stringify(profile.groups));
+            this.saveToState(); // Update current session state
+            await this.context.globalState.update(Constants.GlobalState.ActiveProfile, name);
+            this._onDidChangeFilters.fire();
+            this._onDidChangeProfile.fire();
+            this.logger.info(`Profile loaded: ${name}`);
+            return true;
+        }
+        return false;
+    }
+
+
 }

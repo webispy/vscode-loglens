@@ -731,6 +731,11 @@
         "command": "logmagnifier.editFilterItem",
         "title": "Rename...",
         "icon": "$(edit)"
+      },
+      {
+        "command": "logmagnifier.manageProfiles",
+        "title": "Filter Profiles...",
+        "icon": "$(book)"
       }
     ],
     "submenus": [

@@ -2,10 +2,15 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { Constants } from '../constants';
 import { Logger } from '../services/Logger';
+import { FilterManager } from '../services/FilterManager';
 
 export class QuickAccessProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+
+    constructor(private filterManager: FilterManager) {
+        this.filterManager.onDidChangeProfile(() => this.refresh());
+    }
 
     refresh(): void {
         Logger.getInstance().info('QuickAccessProvider.refresh() called');
@@ -37,6 +42,7 @@ export class QuickAccessProvider implements vscode.TreeDataProvider<vscode.TreeI
             this.createToggleItem(Constants.Labels.Minimap, !!minimapEnabled, Constants.Commands.ToggleMinimap, 'layout-sidebar-right'),
             this.createToggleItem(Constants.Labels.StickyScroll, !!stickyScrollEnabled, Constants.Commands.ToggleStickyScroll, 'pinned'),
             this.createOccurrencesHighlightItem(config),
+            this.createProfileItem(),
             this.createFileSizeItem()
         ]);
     }
@@ -47,6 +53,20 @@ export class QuickAccessProvider implements vscode.TreeDataProvider<vscode.TreeI
         item.command = {
             command: commandId,
             title: label,
+            arguments: []
+        };
+        return item;
+    }
+
+    private createProfileItem(): vscode.TreeItem {
+        const activeProfile = this.filterManager.getActiveProfile();
+        const label = `Profile: ${activeProfile}`;
+        const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+        item.iconPath = new vscode.ThemeIcon('book');
+        item.tooltip = 'Click to switch or manage profiles';
+        item.command = {
+            command: Constants.Commands.ManageProfiles,
+            title: 'Manage Profiles',
             arguments: []
         };
         return item;
