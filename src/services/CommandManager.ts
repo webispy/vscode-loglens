@@ -361,6 +361,20 @@ export class CommandManager {
             }
         }));
 
+        // Command: Enable All Items in Group
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.enableAllItemsInGroup', (group: FilterGroup) => {
+            if (group) {
+                this.filterManager.enableAllFiltersInGroup(group.id);
+            }
+        }));
+
+        // Command: Disable All Items in Group
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.disableAllItemsInGroup', (group: FilterGroup) => {
+            if (group) {
+                this.filterManager.disableAllFiltersInGroup(group.id);
+            }
+        }));
+
         // Command: Enable Filter
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.EnableFilter, (item: FilterItem) => {
             this.handleFilterToggle(item, 'enable');

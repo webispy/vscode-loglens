@@ -379,6 +379,42 @@ export class FilterManager {
         }
     }
 
+    public enableAllFiltersInGroup(groupId: string): void {
+        const group = this.groups.find(g => g.id === groupId);
+        if (group) {
+            let changed = false;
+            for (const filter of group.filters) {
+                if (!filter.isEnabled) {
+                    filter.isEnabled = true;
+                    changed = true;
+                }
+            }
+            if (changed) {
+                this.logger.info(`All filters enabled in group '${group.name}'`);
+                this.saveToState();
+                this._onDidChangeFilters.fire();
+            }
+        }
+    }
+
+    public disableAllFiltersInGroup(groupId: string): void {
+        const group = this.groups.find(g => g.id === groupId);
+        if (group) {
+            let changed = false;
+            for (const filter of group.filters) {
+                if (filter.isEnabled) {
+                    filter.isEnabled = false;
+                    changed = true;
+                }
+            }
+            if (changed) {
+                this.logger.info(`All filters disabled in group '${group.name}'`);
+                this.saveToState();
+                this._onDidChangeFilters.fire();
+            }
+        }
+    }
+
     public refresh(): void {
         this._onDidChangeFilters.fire();
     }

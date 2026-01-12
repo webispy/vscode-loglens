@@ -736,6 +736,16 @@
         "command": "logmagnifier.manageProfiles",
         "title": "Filter Profiles...",
         "icon": "$(book)"
+      },
+      {
+        "command": "logmagnifier.enableAllItemsInGroup",
+        "title": "Enable All Items",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "logmagnifier.disableAllItemsInGroup",
+        "title": "Disable All Items",
+        "icon": "$(circle-slash)"
       }
     ],
     "submenus": [
@@ -974,6 +984,16 @@
           "command": "logmagnifier.disableGroup",
           "when": "viewItem =~ /filterGroup.*/ && (view == logmagnifier-filters || view == logmagnifier-regex-filters)",
           "group": "2_state"
+        },
+        {
+          "command": "logmagnifier.enableAllItemsInGroup",
+          "when": "viewItem =~ /filterGroup.*/ && (view == logmagnifier-filters || view == logmagnifier-regex-filters)",
+          "group": "2_state_batch"
+        },
+        {
+          "command": "logmagnifier.disableAllItemsInGroup",
+          "when": "viewItem =~ /filterGroup.*/ && (view == logmagnifier-filters || view == logmagnifier-regex-filters)",
+          "group": "2_state_batch"
         },
         {
           "command": "logmagnifier.renameFilterGroup",
