@@ -746,6 +746,18 @@
         "command": "logmagnifier.disableAllItemsInGroup",
         "title": "Disable All Items",
         "icon": "$(circle-slash)"
+      },
+      {
+        "command": "logmagnifier.copyGroupEnabledItems",
+        "title": "As List (Multiline)"
+      },
+      {
+        "command": "logmagnifier.copyGroupEnabledItemsSingleLine",
+        "title": "As List (Single Line)"
+      },
+      {
+        "command": "logmagnifier.copyGroupEnabledItemsWithTag",
+        "title": "As Tags (tag:...)"
       }
     ],
     "submenus": [
@@ -764,6 +776,10 @@
       {
         "id": "logmagnifier.contextLinesSubmenu",
         "label": "Context Lines"
+      },
+      {
+        "id": "logmagnifier.copyEnabledSubmenu",
+        "label": "Copy Enabled Items"
       }
     ],
     "menus": {
@@ -828,6 +844,20 @@
           "command": "logmagnifier.setFilterContextLine.cl9",
           "title": "±9",
           "group": "1_cl@4"
+        }
+      ],
+      "logmagnifier.copyEnabledSubmenu": [
+        {
+          "command": "logmagnifier.copyGroupEnabledItems",
+          "group": "1_copy@1"
+        },
+        {
+          "command": "logmagnifier.copyGroupEnabledItemsSingleLine",
+          "group": "1_copy@2"
+        },
+        {
+          "command": "logmagnifier.copyGroupEnabledItemsWithTag",
+          "group": "1_copy@3"
         }
       ],
       "view/title": [
@@ -993,6 +1023,11 @@
         {
           "command": "logmagnifier.disableAllItemsInGroup",
           "when": "viewItem =~ /filterGroup.*/ && (view == logmagnifier-filters || view == logmagnifier-regex-filters)",
+          "group": "2_state_batch"
+        },
+        {
+          "submenu": "logmagnifier.copyEnabledSubmenu",
+          "when": "viewItem =~ /filterGroup.*/",
           "group": "2_state_batch"
         },
         {

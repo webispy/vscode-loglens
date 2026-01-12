@@ -375,6 +375,48 @@ export class CommandManager {
             }
         }));
 
+        // Command: Copy Group Enabled Items (List)
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.copyGroupEnabledItems', async (group: FilterGroup) => {
+            if (group) {
+                const enabledFilters = group.filters.filter(f => f.isEnabled && f.type !== Constants.FilterTypes.Exclude);
+                if (enabledFilters.length > 0) {
+                    const text = enabledFilters.map(f => f.keyword).join('\n');
+                    await vscode.env.clipboard.writeText(text);
+                    vscode.window.showInformationMessage(`Copied ${enabledFilters.length} items to clipboard.`);
+                } else {
+                    vscode.window.showInformationMessage('No enabled items to copy (excluded filters ignored).');
+                }
+            }
+        }));
+
+        // Command: Copy Group Enabled Items (List Single Line)
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.copyGroupEnabledItemsSingleLine', async (group: FilterGroup) => {
+            if (group) {
+                const enabledFilters = group.filters.filter(f => f.isEnabled && f.type !== Constants.FilterTypes.Exclude);
+                if (enabledFilters.length > 0) {
+                    const text = enabledFilters.map(f => f.keyword).join(' '); // Use space as delimiter
+                    await vscode.env.clipboard.writeText(text);
+                    vscode.window.showInformationMessage(`Copied ${enabledFilters.length} items to clipboard (single line).`);
+                } else {
+                    vscode.window.showInformationMessage('No enabled items to copy (excluded filters ignored).');
+                }
+            }
+        }));
+
+        // Command: Copy Group Enabled Items (Tags)
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.copyGroupEnabledItemsWithTag', async (group: FilterGroup) => {
+            if (group) {
+                const enabledFilters = group.filters.filter(f => f.isEnabled && f.type !== Constants.FilterTypes.Exclude);
+                if (enabledFilters.length > 0) {
+                    const text = enabledFilters.map(f => `tag:${f.keyword}`).join(' ');
+                    await vscode.env.clipboard.writeText(text);
+                    vscode.window.showInformationMessage(`Copied ${enabledFilters.length} items as tags to clipboard.`);
+                } else {
+                    vscode.window.showInformationMessage('No enabled items to copy (excluded filters ignored).');
+                }
+            }
+        }));
+
         // Command: Enable Filter
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.EnableFilter, (item: FilterItem) => {
             this.handleFilterToggle(item, 'enable');
