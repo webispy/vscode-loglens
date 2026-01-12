@@ -331,6 +331,21 @@
             "description": "Background color for Regex highlight. Can be a color string, a preset name (e.g. 'Red'), or an object with light/dark values."
           }
         }
+      },
+      {
+        "title": "Android",
+        "properties": {
+          "logmagnifier.adbPath": {
+            "type": "string",
+            "default": "adb",
+            "description": "Path to the adb executable."
+          },
+          "logmagnifier.adbLogcatDefaultOptions": {
+            "type": "string",
+            "default": "-v threadtime -T 1",
+            "description": "Default options for adb logcat command."
+          }
+        }
       }
     ],
     "viewsContainers": {
@@ -358,6 +373,11 @@
           "id": "logmagnifier-regex-filters",
           "name": "Regex Filters",
           "icon": "$(regex)"
+        },
+        {
+          "id": "logmagnifier-adb-logcat",
+          "name": "ADB Logcat",
+          "icon": "$(terminal)"
         }
       ]
     },
@@ -767,6 +787,51 @@
       {
         "command": "logmagnifier.setExcludeStyle.hidden",
         "title": "Hidden"
+      },
+      {
+        "command": "logmagnifier.refreshDevices",
+        "title": "Refresh Devices",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "logmagnifier.pickTargetApp",
+        "title": "Select Target App",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "logmagnifier.addLogcatSession",
+        "title": "New Logcat Session",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "logmagnifier.startLogcatSession",
+        "title": "Start Session",
+        "icon": "$(play)"
+      },
+      {
+        "command": "logmagnifier.stopLogcatSession",
+        "title": "Stop Session",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "logmagnifier.removeLogcatSession",
+        "title": "Remove Session",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "logmagnifier.addLogcatTag",
+        "title": "Add Tag",
+        "icon": "$(tag)"
+      },
+      {
+        "command": "logmagnifier.editLogcatTag",
+        "title": "Edit Tag",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "logmagnifier.removeLogcatTag",
+        "title": "Remove Tag",
+        "icon": "$(trash)"
       }
     ],
     "submenus": [
@@ -955,6 +1020,11 @@
           "command": "logmagnifier.applyRegexFilter",
           "when": "view == logmagnifier-regex-filters",
           "group": "navigation@7"
+        },
+        {
+          "command": "logmagnifier.refreshDevices",
+          "when": "view == logmagnifier-adb-logcat",
+          "group": "navigation"
         }
       ],
       "editor/context": [
@@ -1184,6 +1254,41 @@
           "command": "logmagnifier.exportGroup",
           "when": "viewItem == filterGroupEnabled || viewItem == filterGroupDisabled",
           "group": "3_edit@0"
+        },
+        {
+          "command": "logmagnifier.addLogcatSession",
+          "when": "view == logmagnifier-adb-logcat && viewItem == sessionGroup",
+          "group": "inline"
+        },
+        {
+          "command": "logmagnifier.startLogcatSession",
+          "when": "view == logmagnifier-adb-logcat && viewItem == session_stopped",
+          "group": "inline"
+        },
+        {
+          "command": "logmagnifier.stopLogcatSession",
+          "when": "view == logmagnifier-adb-logcat && viewItem == session_running",
+          "group": "inline"
+        },
+        {
+          "command": "logmagnifier.removeLogcatSession",
+          "when": "view == logmagnifier-adb-logcat && (viewItem == session_stopped || viewItem == session_running)",
+          "group": "inline"
+        },
+        {
+          "command": "logmagnifier.addLogcatTag",
+          "when": "view == logmagnifier-adb-logcat && viewItem == session_stopped",
+          "group": "inline"
+        },
+        {
+          "command": "logmagnifier.editLogcatTag",
+          "when": "view == logmagnifier-adb-logcat && viewItem == tag_editable",
+          "group": "inline"
+        },
+        {
+          "command": "logmagnifier.removeLogcatTag",
+          "when": "view == logmagnifier-adb-logcat && viewItem == tag_editable",
+          "group": "inline"
         }
       ]
     }

@@ -8,6 +8,9 @@ import { HighlightService } from './services/HighlightService';
 import { ResultCountService } from './services/ResultCountService';
 import { Logger } from './services/Logger';
 import { CommandManager } from './services/CommandManager';
+import { LogcatService } from './services/LogcatService';
+import { LogcatTreeProvider } from './views/LogcatTreeProvider';
+import { LogcatCommandManager } from './services/LogcatCommandManager';
 
 export function activate(context: vscode.ExtensionContext) {
 	const filterManager = new FilterManager(context);
@@ -60,6 +63,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Initialize Command Manager (Handles all command registrations)
 	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, quickAccessProvider, logger, wordTreeView, regexTreeView);
+
+	// ADB Logcat
+	const logcatService = new LogcatService(logger);
+	const logcatTreeProvider = new LogcatTreeProvider(logcatService);
+	vscode.window.registerTreeDataProvider('logmagnifier-adb-logcat', logcatTreeProvider);
+	new LogcatCommandManager(context, logcatService, logcatTreeProvider);
 
 	vscode.window.createTreeView('logmagnifier-quick-access', { treeDataProvider: quickAccessProvider });
 
