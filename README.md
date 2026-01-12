@@ -7,7 +7,7 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
 - **Filter Groups**: Organize your analysis with named groups of filters.
 - **Include/Exclude Logic**:
   - **Include**: Keep and highlight lines containing specific keywords.
-  - **Exclude**: Remove lines containing specific keywords (highest priority) and display matches with a strike-through.
+  - **Exclude**: Remove lines containing specific keywords (highest priority) and display matches with a strike-through or hide them completely.
 - **Match Counts**: Real-time count of keyword occurrences displayed in the sidebar.
 - **Search Navigation**: Quickly navigate between matches using Previous/Next buttons in the sidebar.
 - **Highlighting**: Automatically highlights include type keywords in the filtered view.
@@ -33,6 +33,8 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
     - **Add Group**: Click the folder icon to create a new Filter Group (e.g., "AuthFlow").
     - **Expand/Collapse All**: Use the **Expand/Collapse** icons in the view title to manage all groups at once.
     - **Rename**: Right-click a group or a filter item to **Rename** its keyword.
+    - **Bulk Actions**: Right-click a group to **Enable All Items** or **Disable All Items**.
+    - **Copy**: Right-click a group to **Copy Enabled Items** as a list or tag format.
     - **Import/Export**: Use the Export and Import icons in the view title bar to backup or share your filters.
 4. **Add Filters**: Activate the group, then click the **Plus** (`+`) icon to add a keyword.
     - *Tip*: Select text in the editor, right-click, and choose **Add Selection to LogMagnifier** to instantly create a filter.
