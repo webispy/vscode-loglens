@@ -275,7 +275,28 @@ export class LogcatService {
 
             // Open document if not already associated
             if (!session.outputDocumentUri) {
-                const header = `Logcat: ${session.name}\n${'-'.repeat(50)}\n`;
+                const now = new Date();
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                const pad3 = (n: number) => n.toString().padStart(3, '0');
+
+                // UTC
+                const utcStr = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())} ${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}.${pad3(now.getUTCMilliseconds())}`;
+
+                // Local
+                const off = -now.getTimezoneOffset();
+                const sign = off >= 0 ? '+' : '-';
+                const absOff = Math.abs(off);
+                const offH = Math.floor(absOff / 60);
+                const offM = absOff % 60;
+                const tz = `${sign}${pad(offH)}:${pad(offM)}`;
+                const localStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}.${pad3(now.getMilliseconds())} ${tz}`;
+
+                const header = `Logcat session: ${session.name}\n` +
+                    `Command: ${command}\n` +
+                    `Start time\n` +
+                    `- (localtime) ${localStr}\n` +
+                    `- (utc) ${utcStr}\n` +
+                    `${'-'.repeat(50)}\n`;
                 const doc = await vscode.workspace.openTextDocument({ language: 'log', content: header });
                 await vscode.window.showTextDocument(doc, { preview: false, preserveFocus: true });
                 session.outputDocumentUri = doc.uri.toString();
