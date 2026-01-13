@@ -303,9 +303,9 @@ export class LogcatService {
                 const header = `Logcat session: ${session.name}\n` +
                     `Command: ${command}\n` +
                     `Start time\n` +
-                    `- (localtime) ${localStr}\n` +
-                    `- (utc) ${utcStr}\n` +
-                    `${'-'.repeat(50)}\n`;
+                    `- ${localStr}\n` +
+                    `- ${utcStr} +00:00\n` +
+                    `${'='.repeat(80)}\n`;
                 const doc = await vscode.workspace.openTextDocument({ language: 'log', content: header });
                 await vscode.window.showTextDocument(doc, { preview: false, preserveFocus: true });
                 session.outputDocumentUri = doc.uri.toString();
