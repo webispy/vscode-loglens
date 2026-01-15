@@ -195,6 +195,21 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
                 }
 
                 return item;
+            } else if (element.actionType === 'showTouches') {
+                const enabled = element.meta?.enabled === true;
+                const label = enabled ? 'Show Touches: On' : 'Show Touches: Off';
+                const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+                item.contextValue = enabled ? 'controlDeviceAction_showTouches_on' : 'controlDeviceAction_showTouches_off';
+
+                item.iconPath = new vscode.ThemeIcon('target');
+
+                item.command = {
+                    command: 'logmagnifier.control.toggleShowTouches',
+                    title: 'Toggle Show Touches',
+                    arguments: [element]
+                };
+                item.tooltip = 'Toggle "Show Taps" in Developer Options';
+                return item;
             }
         }
 
@@ -233,10 +248,14 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
                 { type: 'controlAction', actionType: 'dumpsysActivity', device: element.device } as ControlActionItem
             ];
         } else if (this.isControlDevice(element)) {
-            return [
-                { type: 'controlDeviceAction', actionType: 'screenshot', device: element.device } as ControlDeviceActionItem,
-                { type: 'controlDeviceAction', actionType: 'screenRecord', device: element.device } as ControlDeviceActionItem
-            ];
+            return (async () => {
+                const showTouchesState = await this.logcatService.getShowTouchesState(element.device.id);
+                return [
+                    { type: 'controlDeviceAction', actionType: 'screenshot', device: element.device } as ControlDeviceActionItem,
+                    { type: 'controlDeviceAction', actionType: 'screenRecord', device: element.device } as ControlDeviceActionItem,
+                    { type: 'controlDeviceAction', actionType: 'showTouches', device: element.device, meta: { enabled: showTouchesState } } as ControlDeviceActionItem
+                ];
+            })();
         } else if (this.isSessionGroup(element)) {
             return this.logcatService.getSessions().filter(s => s.device.id === element.device.id);
         } else if (this.isSession(element)) {

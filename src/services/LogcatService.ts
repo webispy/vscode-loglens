@@ -924,4 +924,42 @@ export class LogcatService {
             });
         });
     }
+
+    public async getShowTouchesState(deviceId: string): Promise<boolean> {
+        return new Promise((resolve) => {
+            const adbPath = this.getAdbPath();
+            const cmd = `${adbPath} -s ${deviceId} shell settings get system show_touches`;
+            this.logger.info(`[ADB] Getting show_touches: ${cmd}`);
+            cp.exec(cmd, (err, stdout) => {
+                if (err) {
+                    this.logger.error(`[ADB] Failed to get show_touches: ${err.message}`);
+                    resolve(false);
+                    return;
+                }
+                const result = stdout.trim();
+                resolve(result === '1');
+            });
+        });
+    }
+
+    public async setShowTouchesState(deviceId: string, enable: boolean): Promise<void> {
+        return new Promise((resolve) => {
+            const adbPath = this.getAdbPath();
+            const value = enable ? '1' : '0';
+            const cmd = `${adbPath} -s ${deviceId} shell settings put system show_touches ${value}`;
+            this.logger.info(`[ADB] Setting show_touches: ${cmd}`);
+            cp.exec(cmd, (err) => {
+                if (err) {
+                    this.logger.error(`[ADB] Failed to set show_touches: ${err.message}`);
+                }
+                this._onDidChangeSessions.fire(); // Trigger refresh
+                resolve();
+            });
+        });
+    }
+
+    public async toggleShowTouches(deviceId: string): Promise<void> {
+        const current = await this.getShowTouchesState(deviceId);
+        await this.setShowTouchesState(deviceId, !current);
+    }
 }

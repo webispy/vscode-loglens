@@ -70,12 +70,13 @@ export interface ControlDeviceItem {
     device: AdbDevice;
 }
 
-export type ControlDeviceActionType = 'screenshot' | 'screenRecord';
+export type ControlDeviceActionType = 'screenshot' | 'screenRecord' | 'showTouches';
 
 export interface ControlDeviceActionItem {
     type: 'controlDeviceAction';
     actionType: ControlDeviceActionType;
     device: AdbDevice;
+    meta?: any;
 }
 
 export type LogcatTreeItem = AdbDevice | LogcatSession | LogcatTag | TargetAppItem | SessionGroupItem | ControlAppItem | ControlActionItem | DumpsysGroupItem | ControlDeviceItem | ControlDeviceActionItem;

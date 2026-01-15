@@ -359,6 +359,12 @@ export class LogcatCommandManager {
                 await this.logcatService.stopRecording(item.device.id);
             }
         }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.toggleShowTouches', async (item: ControlDeviceActionItem) => {
+            if (item && item.device) {
+                await this.logcatService.toggleShowTouches(item.device.id);
+            }
+        }));
     }
 
     private parseTagInput(input: string): LogcatTag | undefined {
