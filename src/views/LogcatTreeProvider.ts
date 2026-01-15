@@ -142,16 +142,62 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
             item.iconPath = new vscode.ThemeIcon('tools');
             return item;
         } else if (this.isControlDeviceAction(element)) {
-            const item = new vscode.TreeItem('Screenshot', vscode.TreeItemCollapsibleState.None);
-            item.contextValue = 'controlDeviceAction';
-            item.iconPath = new vscode.ThemeIcon('device-camera');
-            item.command = {
-                command: 'logmagnifier.control.screenshot',
-                title: 'Screenshot',
-                arguments: [element]
-            };
-            return item;
+            if (element.actionType === 'screenshot') {
+                const item = new vscode.TreeItem('Screenshot', vscode.TreeItemCollapsibleState.None);
+                item.contextValue = 'controlDeviceAction';
+                item.iconPath = new vscode.ThemeIcon('device-camera');
+                item.command = {
+                    command: 'logmagnifier.control.screenshot',
+                    title: 'Screenshot',
+                    arguments: [element]
+                };
+                return item;
+            } else if (element.actionType === 'screenRecord') {
+                const isRecording = this.logcatService.isDeviceRecording(element.device.id);
+                const isStopping = this.logcatService.isDeviceStopping(element.device.id);
+
+                let label = 'Screen Record';
+                let icon = new vscode.ThemeIcon('record');
+                let contextRaw = 'idle';
+                let cmd: vscode.Command | undefined = {
+                    command: 'logmagnifier.control.startScreenRecord',
+                    title: 'Start Recording',
+                    arguments: [element]
+                };
+
+                if (isStopping) {
+                    label = 'Stopping recording...';
+                    icon = new vscode.ThemeIcon('loading~spin');
+                    contextRaw = 'stopping';
+                    cmd = undefined; // Disable command while stopping
+                } else if (isRecording) {
+                    label = 'Recording... (Click to Stop)';
+                    icon = new vscode.ThemeIcon('debug-stop');
+                    contextRaw = 'recording';
+                    cmd = {
+                        command: 'logmagnifier.control.stopScreenRecord',
+                        title: 'Stop Recording',
+                        arguments: [element]
+                    };
+                }
+
+                const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+                item.contextValue = `controlDeviceAction_record_${contextRaw}`;
+                item.iconPath = icon;
+                item.command = cmd;
+
+                if (isStopping) {
+                    item.tooltip = 'Finishing recording...';
+                } else if (isRecording) {
+                    item.tooltip = 'Recording in progress (Max 3 mins)';
+                } else {
+                    item.tooltip = 'Start screen recording (Max 3 mins)';
+                }
+
+                return item;
+            }
         }
+
         return new vscode.TreeItem('Unknown');
     }
 
@@ -188,7 +234,8 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
             ];
         } else if (this.isControlDevice(element)) {
             return [
-                { type: 'controlDeviceAction', actionType: 'screenshot', device: element.device } as ControlDeviceActionItem
+                { type: 'controlDeviceAction', actionType: 'screenshot', device: element.device } as ControlDeviceActionItem,
+                { type: 'controlDeviceAction', actionType: 'screenRecord', device: element.device } as ControlDeviceActionItem
             ];
         } else if (this.isSessionGroup(element)) {
             return this.logcatService.getSessions().filter(s => s.device.id === element.device.id);

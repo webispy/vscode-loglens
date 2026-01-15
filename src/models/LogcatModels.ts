@@ -70,7 +70,7 @@ export interface ControlDeviceItem {
     device: AdbDevice;
 }
 
-export type ControlDeviceActionType = 'screenshot';
+export type ControlDeviceActionType = 'screenshot' | 'screenRecord';
 
 export interface ControlDeviceActionItem {
     type: 'controlDeviceAction';

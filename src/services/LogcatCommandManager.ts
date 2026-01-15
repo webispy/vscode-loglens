@@ -344,6 +344,21 @@ export class LogcatCommandManager {
                 }
             }
         }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.startScreenRecord', async (item: ControlDeviceActionItem) => {
+            if (item && item.device) {
+                const success = await this.logcatService.startRecording(item.device.id);
+                if (success) {
+                    vscode.window.showInformationMessage('Recording started... (Max 3 mins)');
+                }
+            }
+        }));
+
+        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.stopScreenRecord', async (item: ControlDeviceActionItem) => {
+            if (item && item.device) {
+                await this.logcatService.stopRecording(item.device.id);
+            }
+        }));
     }
 
     private parseTagInput(input: string): LogcatTag | undefined {

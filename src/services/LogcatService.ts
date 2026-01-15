@@ -11,6 +11,8 @@ export class LogcatService {
     private processes: Map<string, cp.ChildProcess> = new Map();
     private buffers: Map<string, string[]> = new Map();
     private flushTimers: Map<string, NodeJS.Timeout> = new Map();
+    private recordingProcesses: Map<string, { process: cp.ChildProcess, remotePath: string, pid?: string }> = new Map(); // deviceId -> process info
+    private stoppingDevices: Set<string> = new Set(); // deviceId
 
     private _onDidChangeSessions = new vscode.EventEmitter<void>();
     public readonly onDidChangeSessions = this._onDidChangeSessions.event;
@@ -21,6 +23,7 @@ export class LogcatService {
     constructor(private logger: Logger) { }
 
     private deviceTargetApps: Map<string, string> = new Map(); // deviceId -> packageName
+
 
     private getAdbPath(): string {
         return vscode.workspace.getConfiguration('logmagnifier').get<string>('adbPath') || 'adb';
@@ -169,18 +172,54 @@ export class LogcatService {
     }
 
     public async getAppPid(deviceId: string, packageName: string): Promise<string | undefined> {
+        return this.findPid(deviceId, packageName);
+    }
+
+    private async findPid(deviceId: string, search: string): Promise<string | undefined> {
         return new Promise((resolve) => {
             const adbPath = this.getAdbPath();
-            // pidof might not be available on all android versions, but common enough. 
-            // Alternative: ps -A | grep package
-            cp.exec(`${adbPath} -s ${deviceId} shell pidof -s ${packageName}`, (err, stdout) => {
-                if (err || !stdout.trim()) {
-                    resolve(undefined);
-                } else {
+            // Try pidof first (fastest)
+            cp.exec(`${adbPath} -s ${deviceId} shell pidof -s ${search}`, (err, stdout) => {
+                if (!err && stdout.trim()) {
                     resolve(stdout.trim());
+                    return;
                 }
+
+                // Fallback to ps
+                // ps -A for newer, ps for older
+                const cmd = `${adbPath} -s ${deviceId} shell ps -A`;
+                cp.exec(cmd, (err2, stdout2) => {
+                    if (err2) {
+                        // Try simple ps
+                        cp.exec(`${adbPath} -s ${deviceId} shell ps`, (err3, stdout3) => {
+                            if (err3) {
+                                resolve(undefined);
+                                return;
+                            }
+                            resolve(this.parsePsForPid(stdout3, search));
+                        });
+                        return;
+                    }
+                    resolve(this.parsePsForPid(stdout2, search));
+                });
             });
         });
+    }
+
+    private parsePsForPid(output: string, search: string): string | undefined {
+        const lines = output.split('\n');
+        for (const line of lines) {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length < 9) { continue; }
+            // 2nd column is typically PID in standard Android ps (USER PID ...)
+            // Last column is NAME
+            const pid = parts[1];
+            const name = parts[parts.length - 1];
+            if (name === search || name.endsWith(`/${search}`)) {
+                return pid;
+            }
+        }
+        return undefined;
     }
 
     public setTargetApp(device: AdbDevice, packageName: string) {
@@ -644,6 +683,242 @@ export class LogcatService {
                             this.logger.warn(`[ADB] Failed to cleanup remote screenshot: ${cleanErr.message}`);
                         }
                         resolve(true);
+                    });
+                });
+            });
+        });
+    }
+
+    public isDeviceRecording(deviceId: string): boolean {
+        return this.recordingProcesses.has(deviceId);
+    }
+
+    public isDeviceStopping(deviceId: string): boolean {
+        return this.stoppingDevices.has(deviceId);
+    }
+
+    public async startRecording(deviceId: string): Promise<boolean> {
+        if (this.isDeviceRecording(deviceId) || this.isDeviceStopping(deviceId)) {
+            return false;
+        }
+
+        const adbPath = this.getAdbPath();
+        const timestamp = new Date().getTime();
+        const remotePath = `/data/local/tmp/screenrecord_${timestamp}.mp4`;
+
+        this.logger.info(`[ADB] Starting recording on ${deviceId} to ${remotePath}`);
+
+        const args = ['-s', deviceId, 'shell', 'screenrecord', remotePath];
+        this.logger.info(`[ADB] Spawning (stdio: pipe): ${adbPath} ${args.join(' ')}`);
+
+        // Use 'pipe' for stdout/stderr to capture logs for debugging.
+        // Stdin is ignored to avoid holding the process open unnecessarily if not used.
+        const child = cp.spawn(adbPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+
+        if (child.stdout) {
+            child.stdout.on('data', (data) => {
+                this.logger.info(`[ADB][screenrecord] stdout: ${data.toString().trim()}`);
+            });
+        }
+        if (child.stderr) {
+            child.stderr.on('data', (data) => {
+                this.logger.error(`[ADB][screenrecord] stderr: ${data.toString().trim()}`);
+            });
+        }
+
+        child.on('error', (err) => {
+            this.logger.error(`[ADB] Failed to start screenrecord: ${err.message}`);
+            this.recordingProcesses.delete(deviceId);
+            this._onDidChangeSessions.fire();
+            vscode.window.showErrorMessage(`Screen recording failed: ${err.message}`);
+        });
+
+        child.on('close', async (code) => {
+            this.logger.info(`[ADB] Local adb process closed on ${deviceId} (code ${code})`);
+            this.recordingProcesses.delete(deviceId);
+
+            // Note: We don't verify 'stoppingDevices' here because we want to trigger the check/pull regardless of how it stopped.
+            // If it was stopped manually via stopRecording, the spinner is active.
+            // If it stopped by itself (limit reached), the spinner might not be active, but we still pull.
+
+            this._onDidChangeSessions.fire();
+
+            // Check file and pull immediately (stabilization check is inside checkAndPullRecording)
+            await this.checkAndPullRecording(deviceId, remotePath);
+
+            // Ensure stopping state is cleared if it was set
+            if (this.stoppingDevices.has(deviceId)) {
+                this.stoppingDevices.delete(deviceId);
+                this._onDidChangeSessions.fire();
+            }
+        });
+
+        // Store process info
+        this.recordingProcesses.set(deviceId, { process: child, remotePath });
+        this._onDidChangeSessions.fire();
+
+        // Find PID
+        setTimeout(async () => {
+            const pid = await this.findPid(deviceId, 'screenrecord');
+            if (pid) {
+                this.logger.info(`[ADB] Remote screenrecord PID: ${pid}`);
+                const info = this.recordingProcesses.get(deviceId);
+                if (info) {
+                    info.pid = pid;
+                }
+            }
+        }, 1000);
+
+        return true;
+    }
+
+    public async stopRecording(deviceId: string): Promise<void> {
+        const info = this.recordingProcesses.get(deviceId);
+        if (!info) {
+            this.logger.warn(`[ADB] No recording session found for ${deviceId}`);
+            return;
+        }
+
+        // Set stopping state to show spinner
+        this.stoppingDevices.add(deviceId);
+        this._onDidChangeSessions.fire();
+
+        this.logger.info(`[ADB] Stopping recording on ${deviceId}`);
+        const adbPath = this.getAdbPath();
+
+        // 1. Send explicit SIGINT to remote process
+        let pid = info.pid;
+        if (!pid) {
+            pid = await this.findPid(deviceId, 'screenrecord');
+        }
+
+        if (pid) {
+            this.logger.info(`[ADB] Sending SIGINT to remote process ${pid}...`);
+            const killCmd = `${adbPath} -s ${deviceId} shell kill -2 ${pid}`;
+
+            cp.exec(killCmd, (err) => {
+                if (err) {
+                    this.logger.warn(`[ADB] Failed to kill -2: ${err.message}`);
+                } else {
+                    this.logger.info(`[ADB] Signal sent.`);
+                }
+            });
+            // Removed fixed delay here
+        } else {
+            this.logger.warn(`[ADB] Could not determine remote PID. Stopping local process only.`);
+        }
+
+        // 2. Wait for remote process to die
+        this.logger.info(`[ADB] Waiting for remote screenrecord to finish...`);
+        const maxWait = 5000; // 5 seconds
+        const start = Date.now();
+
+        while (Date.now() - start < maxWait) {
+            const currentPid = await this.findPid(deviceId, 'screenrecord');
+            if (!currentPid) {
+                this.logger.info(`[ADB] Remote screenrecord process gone.`);
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // 3. Kill local process to cleanup
+        if (info.process) {
+            this.logger.info(`[ADB] Killing local adb process...`);
+            info.process.kill();
+        }
+
+        // Cleanup map logic and stopping state clearing is in 'close' handler
+    }
+
+    private async checkAndPullRecording(deviceId: string, remotePath: string): Promise<void> {
+        const adbPath = this.getAdbPath();
+
+        this.logger.info(`[ADB] Checking file status...`);
+        let attempts = 0;
+        const maxAttempts = 10;
+        let previousSize = 0;
+
+        const checkLoop = async () => {
+            while (attempts < maxAttempts) {
+                const lsCmd = `${adbPath} -s ${deviceId} shell ls -l ${remotePath}`;
+
+                const result = await new Promise<{ size: number, output: string }>((resolve) => {
+                    cp.exec(lsCmd, (err, stdout) => {
+                        attempts++;
+                        let size = 0;
+                        if (stdout) {
+                            const parts = stdout.trim().split(/\s+/);
+                            if (parts.length >= 5) {
+                                size = parseInt(parts[4], 10);
+                            }
+                        }
+                        resolve({ size, output: stdout?.trim() || '' });
+                    });
+                });
+
+                this.logger.info(`[ADB] File size check (${attempts}/${maxAttempts}): ${result.size} bytes`);
+
+                if (result.size > 0 && result.size === previousSize) {
+                    this.logger.info(`[ADB] File size stabilized at ${result.size} bytes`);
+                    await this.pullRecording(deviceId, remotePath);
+                    return;
+                } else if (result.size > 0 && attempts >= maxAttempts) {
+                    this.logger.warn(`[ADB] Max attempts reached. File size: ${result.size} bytes`);
+                    await this.pullRecording(deviceId, remotePath);
+                    return;
+                } else if (result.size === 0 && attempts >= maxAttempts) {
+                    this.logger.error(`[ADB] File size is still 0 after ${maxAttempts} attempts.`);
+                    vscode.window.showErrorMessage('Screen recording file is empty.');
+                    return;
+                }
+
+                previousSize = result.size;
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        };
+
+        await checkLoop();
+    }
+
+    private async pullRecording(deviceId: string, remotePath: string) {
+        const os = require('os');
+        const path = require('path');
+        const tmpDir = os.tmpdir();
+        const now = new Date();
+        const filename = `screenrecord_${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}.mp4`;
+        const localPath = path.join(tmpDir, filename);
+
+        const adbPath = this.getAdbPath();
+
+        vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Pulling screen recording...",
+            cancellable: false
+        }, async (progress) => {
+            return new Promise<void>((resolve) => {
+                const pullCmd = `${adbPath} -s ${deviceId} pull ${remotePath} "${localPath}"`;
+                this.logger.info(`[ADB] Pulling video: ${pullCmd}`);
+
+                cp.exec(pullCmd, async (err) => {
+                    if (err) {
+                        this.logger.error(`[ADB] Failed to pull recording: ${err.message}`);
+                        vscode.window.showErrorMessage('Failed to retrieve screen recording.');
+                    } else {
+                        this.logger.info(`[ADB] Video pulled successfully to ${localPath}`);
+                        const uri = vscode.Uri.file(localPath);
+                        await vscode.commands.executeCommand('vscode.open', uri);
+                    }
+
+                    // Cleanup remote
+                    const cleanupCmd = `${adbPath} -s ${deviceId} shell rm ${remotePath}`;
+                    cp.exec(cleanupCmd, (cleanupErr) => {
+                        if (cleanupErr) {
+                            this.logger.warn(`[ADB] Failed to cleanup remote file: ${cleanupErr.message}`);
+                        } else {
+                            this.logger.info(`[ADB] Remote file cleaned up`);
+                        }
+                        resolve();
                     });
                 });
             });
