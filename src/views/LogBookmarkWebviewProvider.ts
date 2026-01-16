@@ -104,7 +104,7 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
 
                 // Flattened structure (Table): log-line (row) > gutter (cell) + line-content (cell)
                 // Changed line-content from span to div for better table-cell behavior
-                fileLines += `<div class="log-line" onclick="jumpTo('${item.id}')"><div class="gutter"><span class="remove-btn" onclick="removeBookmark('${item.id}')" title="Remove Bookmark">×</span><span class="line-number">${paddedLine}</span></div><div class="line-content">${safeContent}</div></div>`;
+                fileLines += `<div class="log-line" onclick="jumpTo('${item.id}')"><div class="gutter"><div class="gutter-content"><span class="remove-btn" onclick="removeBookmark('${item.id}')" title="Remove Bookmark">×</span><span class="line-number">${paddedLine}</span></div></div><div class="line-content">${safeContent}</div></div>`;
             }
 
             fileGroups += `<div class="file-group"><div class="file-header">${filename}</div><div class="file-content"><div class="lines-inner">${fileLines}</div></div></div>`;
@@ -188,6 +188,13 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         background-color: var(--vscode-list-hoverBackground);
                     }
 
+                    .gutter-content {
+                        display: flex;
+                        flex-direction: row;
+                        align-items: center;
+                        height: 100%;
+                    }
+
                     .remove-btn {
                         display: inline-block; /* Inline inside table cell gutter */
                         vertical-align: middle;
@@ -230,6 +237,7 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         font-family: inherit;
                         tab-size: 4;
                         z-index: 0;
+                        width: 100%;
                     }
 
                     .empty-state {
