@@ -16,21 +16,18 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
 - **Context Lines**: View matching lines with surrounding context (±3, ±5, ±9 lines).
 - **Focus Mode**: Generates a new editor tab with filtered results, enabling multi-stage filtering.
 - **Regex Support**: Advanced filtering using regular expressions.
-- **Expand/Collapse**: Quickly expand or collapse all filter groups in the sidebar.
-- **Improved Drag & Drop**: Move filters between groups and reorder groups themselves with ease.
-- **Rename**: Easily rename filter groups and individual filter keywords/nicknames.
+- **Drag & Drop**: Move filters between groups and reorder groups themselves with ease.
 - **Organized Context Menus**: Intuitive submenus for managing filter types, case sensitivity, and highlight modes.
 - **Selection to Filter**: Quickly add selected text as a new filter via the editor context menu.
 - **Persistence**: Filters are automatically saved and restored when VS Code restarts.
 - **Import/Export**: Share and backup your filter configurations via JSON files.
-- **Quick Access**: Toggle Word Wrap (active tab), Minimap, Sticky Scroll, and view real-time File Size (Bytes/KB/MB) from the sidebar.
+- **Quick Access**: Toggle Word Wrap (active tab), Minimap, Sticky Scroll, and view File Size from the sidebar.
 - **ADB Logcat Integration**: Directly view and filter Android logs within VS Code.
   - **Device Management**: View connected devices and their status.
   - **Process Filtering**: Filter logs by specific running applications (PID) automatically.
   - **Control Device**: Quickly take screenshots, record screen, and toggle 'Show Touches'.
   - **App Control**: Uninstall apps, clear storage, clear cache, and run dumpsys commands.
   - **Session Management**: Create multiple logcat sessions with custom tag filters, priorities, and historical time toggles.
-  - **Detailed Headers**: Sessions include start time (Local/UTC) and command details.
 
 ## Usage
 
@@ -57,22 +54,22 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
 ### ADB Logcat View
 
 1.  **Devices**:
-    *   The "ADB Logcat" view automatically lists connected Android devices.
-    *   **Select Target App**: Click the "Target app" item under a device to filter logs by a specific running application.
+    - The "ADB Logcat" view automatically lists connected Android devices.
+    - **Select Target App**: Click the "Target app" item under a device to filter logs by a specific running application.
 2.  **Control Device**:
-    *   **Screenshot**: Capture and view a screenshot of the device immediately.
-    *   **Screen Record**: Start/Stop screen recording. Videos are automatically pulled to your temp folder and opened.
-    *   **Show Touches**: Toggle visual feedback for taps on the device screen.
+    - **Screenshot**: Capture and view a screenshot of the device immediately.
+    - **Screen Record**: Start/Stop screen recording. Videos are automatically pulled to your temp folder and opened.
+    - **Show Touches**: Toggle visual feedback for taps on the device screen.
 3.  **Control App**:
-    *   When a target app is selected, a "Control app" menu appears.
-    *   **Actions**: Uninstall, Clear Storage, or Clear Cache for the selected application.
-    *   **Dumpsys**: Access `package`, `meminfo`, and `activity` dumps directly from the sidebar.
+    - When a target app is selected, a "Control app" menu appears.
+    - **Actions**: Uninstall, Clear Storage, or Clear Cache for the selected application.
+    - **Dumpsys**: Access `package`, `meminfo`, and `activity` dumps directly from the sidebar.
 4.  **Sessions**:
-    *   **Create Session**: Click the `+` icon on "Logcat Sessions" or run "Add Logcat Session".
-    *   **History Toggle**: Toggle the clock icon on a session to switch between "Start from now" and "Show full history".
-    *   **Add Tags**: Right-click a session to add specific tag filters (e.g., `MyApp:D`).
-    *   **Start/Stop**: Use the Play/Stop icons to control log capture.
-    *   **Output**: Logs are streamed to a new editor document with a detailed header.
+    - **Create Session**: Click the `+` icon on "Logcat Sessions" or run "Add Logcat Session".
+    - **History Toggle**: Toggle the clock icon on a session to switch between "Start from now" and "Show full history".
+    - **Add Tags**: Right-click a session to add specific tag filters (e.g., `MyApp:D`).
+    - **Start/Stop**: Use the Play/Stop icons to control log capture.
+    - **Output**: Logs are streamed to a new editor document with a detailed header.
 
 ## Requirements
 
@@ -87,6 +84,8 @@ This extension contributes the following settings:
 * `logmagnifier.highlightColors.color01` ... `color16`: Customizable light/dark mode colors for each highlight preset.
 * `logmagnifier.tempFilePrefix`: Prefix for the filtered temp files. (Default: `filtered_`)
 * `logmagnifier.statusBarTimeout`: Duration for status bar messages in milliseconds. (Default: 5000)
+* `logmagnifier.adbPath`: Path to the adb executable. (Default: `adb`)
+* `logmagnifier.adbLogcatDefaultOptions`: Default options for adb logcat command. (Default: `-v threadtime`)
 
 ## Known Limitations
 
@@ -95,17 +94,17 @@ This extension contributes the following settings:
 LogMagnifier depends on VS Code's extension capabilities to provide highlighting and navigation. There are two levels of limitations for large files:
 
 1.  **Restricted Mode (`editor.largeFileOptimizations`)**:
-    *   VS Code defaults to "restricted mode" for large files to allow them to open quickly. In this mode, extensions are disabled.
-    *   To enable Highlighting, Previous Match, and Next Match commands for these files, you must disable this optimization in your VS Code settings:
+    * VS Code defaults to "restricted mode" for large files to allow them to open quickly. In this mode, extensions are disabled.
+    * To enable Highlighting, Previous Match, and Next Match commands for these files, you must disable this optimization in your VS Code settings:
         ```json
         "editor.largeFileOptimizations": false
         ```
-    *   *Warning*: This may cause VS Code to freeze or perform slowly when opening very large files.
+    * *Warning*: This may cause VS Code to freeze or perform slowly when opening very large files.
 
 2.  **Extension Host Hard Limit (50MB)**:
-    *   Even with optimizations disabled, VS Code's extension host has a hard limit. Files larger than **50MB** are **not synchronized** to extensions ([reference](https://github.com/microsoft/vscode/issues/31078)).
-    *   For files > 50MB, **highlighting will not work** regardless of your settings because the text content is completely invisible to the plugin.
-    *   **Workaround**: Use the **Apply Filter** (Play button) feature. This streams the file content (bypassing the editor limit) and generates a smaller filtered log file where highlighting and navigation will work perfectly.
+    * Even with optimizations disabled, VS Code's extension host has a hard limit. Files larger than **50MB** are **not synchronized** to extensions ([reference](https://github.com/microsoft/vscode/issues/31078)).
+    * For files > 50MB, **highlighting will not work** regardless of your settings because the text content is completely invisible to the plugin.
+    * **Workaround**: Use the **Apply Filter** (Play button) feature. This streams the file content (bypassing the editor limit) and generates a smaller filtered log file where highlighting and navigation will work perfectly.
 
 ## Credits
 
