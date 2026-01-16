@@ -9,14 +9,18 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
     readonly onDidChangeTreeData: vscode.Event<LogcatTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private devices: AdbDevice[] = [];
+    private initialized = false;
 
     constructor(private logcatService: LogcatService) {
         this.logcatService.onDidChangeSessions(() => this.refresh());
-        // Deferred initialization: devices are fetched via initialize()
     }
 
     public initialize() {
-        this.refreshDevices();
+        // Kept for backward compatibility or manual refresh if needed, 
+        // but getChildren handles lazy load now.
+        if (!this.initialized) {
+            this.refreshDevices();
+        }
     }
 
     refresh(): void {
@@ -25,6 +29,7 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
 
     async refreshDevices(): Promise<void> {
         this.devices = await this.logcatService.getDevices();
+        this.initialized = true;
         this.refresh();
     }
 
@@ -218,6 +223,13 @@ export class LogcatTreeProvider implements vscode.TreeDataProvider<LogcatTreeIte
 
     getChildren(element?: LogcatTreeItem): vscode.ProviderResult<LogcatTreeItem[]> {
         if (!element) {
+            if (!this.initialized) {
+                this.initialized = true;
+                return this.logcatService.getDevices().then(devices => {
+                    this.devices = devices;
+                    return this.devices;
+                });
+            }
             return this.devices;
         } else if (this.isDevice(element)) {
             // Return TargetApp, potentially ControlApp, ControlDevice, and SessionGroup

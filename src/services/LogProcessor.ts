@@ -43,9 +43,19 @@ export class LogProcessor {
     public async processFile(inputPath: string, filterGroups: FilterGroup[], options?: { prependLineNumbers?: boolean, totalLineCount?: number }): Promise<{ outputPath: string, processed: number, matched: number }> {
         const fileStream = fs.createReadStream(inputPath, { encoding: 'utf8' });
 
+        fileStream.on('error', (err) => {
+            console.error(`Error reading file ${inputPath}:`, err);
+            // We can't really bubble this up easily since it's inside a promise that might be establishing the readline,
+            // but readline should also error/close.
+        });
+
         const rl = readline.createInterface({
             input: fileStream,
             crlfDelay: Infinity
+        });
+
+        rl.on('error', (err) => {
+            console.error(`Readline error while processing ${inputPath}:`, err);
         });
 
         const activeGroups = filterGroups.filter(g => g.isEnabled);

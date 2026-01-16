@@ -68,20 +68,7 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
                     const strokeColor = isDark ? '#cccccc' : '#333333';
                     const style = element.excludeStyle || 'line-through';
 
-                    let svg: string;
-                    if (style === 'hidden') {
-                        // Dotted box to represent hidden text (ghost text)
-                        svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-                            <rect x="1" y="4" width="14" height="8" rx="2" fill="none" stroke="${strokeColor}" stroke-width="1.0" stroke-dasharray="3,2"/>
-                        </svg>`;
-                    } else {
-                        // Create a strike-through icon with gap
-                        // Text 'abc' represents the word, Line represents the strike
-                        svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-                            <text x="50%" y="11" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="${fillColor}" text-anchor="middle">abc</text>
-                            <line x1="0" y1="8" x2="16" y2="8" stroke="${strokeColor}" stroke-width="1.5" />
-                        </svg>`;
-                    }
+                    const svg = this.generateExcludeSvg(fillColor, strokeColor, style);
                     item.iconPath = vscode.Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
                 } else if (element.color) {
                     // Resolve color: check if it's a preset ID, otherwise use as is
@@ -94,19 +81,8 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
                     }
 
                     // Create a colored dot icon using SVG data URI
-                    let svg: string;
                     const mode = element.highlightMode ?? 0;
-                    if (mode === 1) {
-                        // Rounded box (pill shape) - represents line text only
-                        svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1" y="5" width="14" height="6" rx="3" ry="3" fill="${fillColor}"/></svg>`;
-                    } else if (mode === 2) {
-                        // Wide rectangle with gradient to represent full line width
-                        const gradId = `grad_${element.id.replace(/[^a-zA-Z0-9]/g, '')}`;
-                        svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:${fillColor};stop-opacity:1" /><stop offset="70%" style="stop-color:${fillColor};stop-opacity:1" /><stop offset="100%" style="stop-color:${fillColor};stop-opacity:0.3" /></linearGradient></defs><rect x="0" y="5" width="16" height="6" fill="url(#${gradId})"/></svg>`;
-                    } else {
-                        // Circle - represents word
-                        svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4" fill="${fillColor}"/></svg>`;
-                    }
+                    const svg = this.generateIncludeSvg(fillColor, mode, element.id);
                     item.iconPath = vscode.Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
                 } else {
                     item.iconPath = new vscode.ThemeIcon('pass-filled');
@@ -223,7 +199,35 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
         this.filterManager.moveFilter(activeGroup.id, targetGroup.id, activeFilterItem.id, targetItem.id, 'after');
     }
 
+    private generateExcludeSvg(fillColor: string, strokeColor: string, style: string): string {
+        if (style === 'hidden') {
+            // Dotted box to represent hidden text (ghost text)
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                <rect x="1" y="4" width="14" height="8" rx="2" fill="none" stroke="${strokeColor}" stroke-width="1.0" stroke-dasharray="3,2"/>
+            </svg>`;
+        }
+        // Create a strike-through icon with gap
+        // Text 'abc' represents the word, Line represents the strike
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+            <text x="50%" y="11" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="${fillColor}" text-anchor="middle">abc</text>
+            <line x1="0" y1="8" x2="16" y2="8" stroke="${strokeColor}" stroke-width="1.5" />
+        </svg>`;
+    }
+
+    private generateIncludeSvg(fillColor: string, mode: number, elementId: string): string {
+        if (mode === 1) {
+            // Rounded box (pill shape) - represents line text only
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1" y="5" width="14" height="6" rx="3" ry="3" fill="${fillColor}"/></svg>`;
+        } else if (mode === 2) {
+            // Wide rectangle with gradient to represent full line width
+            const gradId = `grad_${elementId.replace(/[^a-zA-Z0-9]/g, '')}`;
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:${fillColor};stop-opacity:1" /><stop offset="70%" style="stop-color:${fillColor};stop-opacity:1" /><stop offset="100%" style="stop-color:${fillColor};stop-opacity:0.3" /></linearGradient></defs><rect x="0" y="5" width="16" height="6" fill="url(#${gradId})"/></svg>`;
+        }
+        // Circle - represents word
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4" fill="${fillColor}"/></svg>`;
+    }
+
     private isGroup(item: any): item is FilterGroup {
-        return (item as FilterGroup).filters !== undefined;
+        return item && typeof item === 'object' && Array.isArray((item as FilterGroup).filters);
     }
 }

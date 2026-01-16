@@ -64,6 +64,26 @@ export class FilterManager {
         }
     }
 
+    private saveDebounceTimer: NodeJS.Timeout | undefined;
+
+    private deepCopy<T>(obj: T): T {
+        try {
+            return structuredClone(obj);
+        } catch (e) {
+            return JSON.parse(JSON.stringify(obj));
+        }
+    }
+
+    private debouncedSaveToState() {
+        if (this.saveDebounceTimer) {
+            clearTimeout(this.saveDebounceTimer);
+        }
+        this.saveDebounceTimer = setTimeout(() => {
+            this.saveToState();
+            this.saveDebounceTimer = undefined;
+        }, 300);
+    }
+
     private async saveToState() {
         // 1. Save to current session state (FilterGroups) - this ensures reload restoration
         await this.context.globalState.update(Constants.GlobalState.FilterGroups, this.groups);
@@ -77,13 +97,13 @@ export class FilterManager {
         const profiles = this.context.globalState.get<FilterProfile[]>(Constants.GlobalState.FilterProfiles) || [];
         const index = profiles.findIndex(p => p.name === name);
         if (index !== -1) {
-            profiles[index].groups = JSON.parse(JSON.stringify(groups)); // Deep copy
+            profiles[index].groups = this.deepCopy(groups);
             profiles[index].updatedAt = Date.now();
         } else {
             // New profile or Default profile being saved for the first time
             profiles.push({
                 name,
-                groups: JSON.parse(JSON.stringify(groups)),
+                groups: this.deepCopy(groups),
                 updatedAt: Date.now()
             });
         }
@@ -198,7 +218,7 @@ export class FilterManager {
         };
         this.groups.push(newGroup);
         this.logger.info(`Filter group added: ${name} (Regex: ${isRegex})`);
-        this.saveToState();
+        this.debouncedSaveToState();
         this._onDidChangeFilters.fire();
         return newGroup;
     }
@@ -210,7 +230,7 @@ export class FilterManager {
             // We save state, but NO event fired because expansion state change shouldn't trigger a full tree refresh
             // (which would defeat the purpose of tracking UI state, as refresh forces getTreeItem).
             // However, we DO want to persist it.
-            this.saveToState();
+            this.debouncedSaveToState();
         }
     }
 
@@ -240,7 +260,7 @@ export class FilterManager {
             };
             group.filters.push(newFilter);
             this.logger.info(`Filter added to group '${group.name}': ${keyword} (Type: ${type}, Regex: ${isRegex})`);
-            this.saveToState();
+            this.debouncedSaveToState();
             this._onDidChangeFilters.fire();
             return newFilter;
         }
@@ -270,7 +290,7 @@ export class FilterManager {
             const filter = group.filters.find(f => f.id === filterId);
             if (filter) {
                 filter.color = color;
-                this.saveToState();
+                this.debouncedSaveToState();
                 this._onDidChangeFilters.fire();
             }
         }
@@ -281,7 +301,7 @@ export class FilterManager {
         if (group) {
             group.name = newName;
             this.logger.info(`Filter group renamed to: ${newName}`);
-            this.saveToState();
+            this.debouncedSaveToState();
             this._onDidChangeFilters.fire();
         }
     }
@@ -298,7 +318,7 @@ export class FilterManager {
                     filter.nickname = updates.nickname;
                 }
                 this.logger.info(`Filter '${filter.id}' updated`);
-                this.saveToState();
+                this.debouncedSaveToState();
                 this._onDidChangeFilters.fire();
             }
         }
@@ -317,7 +337,7 @@ export class FilterManager {
 
                 // Cycle: 0 (Word) -> 1 (Line) -> 2 (Whole Line) -> 0
                 filter.highlightMode = (filter.highlightMode + 1) % 3;
-                this.saveToState();
+                this.debouncedSaveToState();
                 this._onDidChangeFilters.fire();
             }
         }
@@ -329,7 +349,7 @@ export class FilterManager {
             const filter = group.filters.find(f => f.id === filterId);
             if (filter) {
                 filter.caseSensitive = !filter.caseSensitive;
-                this.saveToState();
+                this.debouncedSaveToState();
                 this._onDidChangeFilters.fire();
             }
         }
@@ -344,7 +364,7 @@ export class FilterManager {
                 const currentIndex = levels.indexOf(filter.contextLine ?? 0);
                 const nextIndex = (currentIndex + 1) % levels.length;
                 filter.contextLine = levels[nextIndex];
-                this.saveToState();
+                this.debouncedSaveToState();
                 this._onDidChangeFilters.fire();
             }
         }
@@ -355,7 +375,7 @@ export class FilterManager {
         if (group) {
             group.filters = group.filters.filter(f => f.id !== filterId);
             this.logger.info(`Filter removed from group '${group.name}': ${filterId}`);
-            this.saveToState();
+            this.debouncedSaveToState();
             this._onDidChangeFilters.fire();
         }
     }
@@ -371,7 +391,7 @@ export class FilterManager {
                 this.initDefaultFilters();
             }
 
-            this.saveToState();
+            this.debouncedSaveToState();
             this._onDidChangeFilters.fire();
         }
     }
@@ -381,7 +401,7 @@ export class FilterManager {
         if (group) {
             group.isEnabled = !group.isEnabled;
             this.logger.info(`Filter group '${group.name}' ${group.isEnabled ? 'enabled' : 'disabled'}`);
-            this.saveToState();
+            this.debouncedSaveToState();
             this._onDidChangeFilters.fire();
         }
     }
@@ -398,7 +418,7 @@ export class FilterManager {
             }
             if (changed) {
                 this.logger.info(`All filters enabled in group '${group.name}'`);
-                this.saveToState();
+                this.debouncedSaveToState();
                 this._onDidChangeFilters.fire();
             }
         }
@@ -416,7 +436,7 @@ export class FilterManager {
             }
             if (changed) {
                 this.logger.info(`All filters disabled in group '${group.name}'`);
-                this.saveToState();
+                this.debouncedSaveToState();
                 this._onDidChangeFilters.fire();
             }
         }
@@ -433,7 +453,7 @@ export class FilterManager {
             if (filter) {
                 filter.isEnabled = !filter.isEnabled;
                 this.logger.info(`Filter '${filter.keyword}' in group '${group.name}' ${filter.isEnabled ? 'enabled' : 'disabled'}`);
-                this.saveToState();
+                this.debouncedSaveToState();
                 this._onDidChangeFilters.fire();
             }
         }
@@ -465,7 +485,7 @@ export class FilterManager {
                     }
 
                     this.logger.info(`Filter '${filter.keyword}' type set to: ${filter.type}`);
-                    this.saveToState();
+                    this.debouncedSaveToState();
                     this._onDidChangeFilters.fire();
                 }
             }
@@ -479,7 +499,7 @@ export class FilterManager {
             if (filter) {
                 if (filter.caseSensitive !== enable) {
                     filter.caseSensitive = enable;
-                    this.saveToState();
+                    this.debouncedSaveToState();
                     this._onDidChangeFilters.fire();
                 }
             }
@@ -493,7 +513,7 @@ export class FilterManager {
             if (filter) {
                 if (filter.excludeStyle !== style) {
                     filter.excludeStyle = style;
-                    this.saveToState();
+                    this.debouncedSaveToState();
                     this._onDidChangeFilters.fire();
                 }
             }
@@ -513,7 +533,7 @@ export class FilterManager {
 
                 if (filter.highlightMode !== mode) {
                     filter.highlightMode = mode;
-                    this.saveToState();
+                    this.debouncedSaveToState();
                     this._onDidChangeFilters.fire();
                 }
             }
@@ -527,7 +547,7 @@ export class FilterManager {
             if (filter) {
                 if (filter.contextLine !== lines) {
                     filter.contextLine = lines;
-                    this.saveToState();
+                    this.debouncedSaveToState();
                     this._onDidChangeFilters.fire();
                 }
             }
@@ -609,7 +629,7 @@ export class FilterManager {
             }
         }
 
-        this.saveToState();
+        this.debouncedSaveToState();
         this._onDidChangeFilters.fire();
     }
 
@@ -648,7 +668,7 @@ export class FilterManager {
             }
         }
 
-        this.saveToState();
+        this.debouncedSaveToState();
         this._onDidChangeFilters.fire();
     }
 
@@ -744,7 +764,7 @@ export class FilterManager {
                 }
 
                 if (addedCount > 0) {
-                    this.saveToState();
+                    this.debouncedSaveToState();
                     this._onDidChangeFilters.fire();
                 }
 

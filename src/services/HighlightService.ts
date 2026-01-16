@@ -88,6 +88,8 @@ export class HighlightService implements vscode.Disposable {
 
     public refreshDecorationType() {
         this.dispose();
+        // Clear cache explicitly after disposal to prevent memory leaks if dispose implementation changes
+        this.decorationTypes.clear();
     }
 
     public updateHighlights(editor: vscode.TextEditor): Map<string, number> {
@@ -183,13 +185,29 @@ export class HighlightService implements vscode.Disposable {
                 let match;
                 while ((match = regex.exec(text))) {
                     count++;
-                    const startPos = editor.document.positionAt(match.index);
-                    const endPos = editor.document.positionAt(match.index + match[0].length);
+                    const startIndex = match.index;
+
+                    // Optimization: Caching line objects is risky if document changes, but fine within this synchronous loop.
+                    // However, positionAt is the main cost. 
+                    // We can optimize by only converting start position if we need line info, 
+                    // and only calculating end position if we are NOT using line range.
+
+                    let startPos: vscode.Position | undefined;
 
                     decoContexts.forEach(ctx => {
+                        if (!startPos) {
+                            startPos = editor.document.positionAt(startIndex);
+                        }
+
                         if (ctx.useLineRange) {
+                            // Since we are highlighting the whole line (or context), we can just get the line range.
+                            // Accessing lineAt is relatively fast but can be optimized if multiple contexts use same line.
+                            // But keeping it simple:
                             rangesByDeco.get(ctx.key)!.push(editor.document.lineAt(startPos.line).range);
                         } else {
+                            // We need exact range
+                            const endIndex = startIndex + match![0].length;
+                            const endPos = editor.document.positionAt(endIndex);
                             rangesByDeco.get(ctx.key)!.push(new vscode.Range(startPos, endPos));
                         }
                     });

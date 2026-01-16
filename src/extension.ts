@@ -46,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Sync expansion state
 	const isGroup = (item: any): item is import('./models/Filter').FilterGroup => {
-		return (item as import('./models/Filter').FilterGroup).filters !== undefined;
+		return item && typeof item === 'object' && Array.isArray((item as import('./models/Filter').FilterGroup).filters);
 	};
 
 	const setupExpansionSync = (view: vscode.TreeView<any>) => {
@@ -74,10 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.window.registerTreeDataProvider(Constants.Views.ADBLogcat, logcatTreeProvider);
 	new LogcatCommandManager(context, logcatService, logcatTreeProvider);
 
-	// Defer ADB device fetching to avoid slowing down extension activation
-	setTimeout(() => {
-		logcatTreeProvider.initialize();
-	}, 1000);
+	// Deferred initialization is now handled lazily by LogcatTreeProvider.getChildren()
 
 	// Log Bookmark
 	const bookmarkService = new LogBookmarkService(context);
@@ -227,6 +224,13 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(doc => {
 		if (vscode.window.activeTextEditor && doc === vscode.window.activeTextEditor.document) {
 			quickAccessProvider.refresh();
+		}
+	}));
+
+	// Prevent memory leak by clearing reference to closed documents
+	context.subscriptions.push(vscode.workspace.onDidCloseTextDocument(doc => {
+		if (lastProcessedDoc === doc) {
+			lastProcessedDoc = undefined;
 		}
 	}));
 }
