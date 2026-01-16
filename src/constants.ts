@@ -108,6 +108,60 @@ export const Constants = {
         ImportRegexFilters: 'logmagnifier.importRegexFilters',
         ManageProfiles: 'logmagnifier.manageProfiles',
 
+        // ADB Logcat
+        RefreshDevices: 'logmagnifier.refreshDevices',
+        AddLogcatSession: 'logmagnifier.addLogcatSession',
+        StartLogcatSession: 'logmagnifier.startLogcatSession',
+        StopLogcatSession: 'logmagnifier.stopLogcatSession',
+        RemoveLogcatSession: 'logmagnifier.removeLogcatSession',
+        SessionEnableTimeFilter: 'logmagnifier.session.enableTimeFilter',
+        SessionDisableTimeFilter: 'logmagnifier.session.disableTimeFilter',
+        AddLogcatTag: 'logmagnifier.addLogcatTag',
+        EditLogcatTag: 'logmagnifier.editLogcatTag',
+        RemoveLogcatTag: 'logmagnifier.removeLogcatTag',
+        PickTargetApp: 'logmagnifier.pickTargetApp',
+
+        ControlUninstall: 'logmagnifier.control.uninstall',
+        ControlClearStorage: 'logmagnifier.control.clearStorage',
+        ControlClearCache: 'logmagnifier.control.clearCache',
+        ControlDumpsys: 'logmagnifier.control.dumpsys',
+        ControlDumpsysMeminfo: 'logmagnifier.control.dumpsysMeminfo',
+        ControlDumpsysActivity: 'logmagnifier.control.dumpsysActivity',
+        ControlScreenshot: 'logmagnifier.control.screenshot',
+        ControlStartScreenRecord: 'logmagnifier.control.startScreenRecord',
+        ControlStopScreenRecord: 'logmagnifier.control.stopScreenRecord',
+        ControlToggleShowTouches: 'logmagnifier.control.toggleShowTouches',
+
+        // Bookmark
+        AddBookmark: 'logmagnifier.addBookmark',
+        RemoveBookmark: 'logmagnifier.removeBookmark',
+        JumpToBookmark: 'logmagnifier.jumpToBookmark',
+
+        // Other shortcuts / Context menu
+        CopyGroupEnabledItems: 'logmagnifier.copyGroupEnabledItems',
+        CopyGroupEnabledItemsSingleLine: 'logmagnifier.copyGroupEnabledItemsSingleLine',
+        CopyGroupEnabledItemsWithTag: 'logmagnifier.copyGroupEnabledItemsWithTag',
+
+        SetExcludeStyle: {
+            LineThrough: 'logmagnifier.setExcludeStyle.lineThrough',
+            Hidden: 'logmagnifier.setExcludeStyle.hidden',
+        },
+
+        // Aliases / Shortcuts
+        CreateFilter: 'logmagnifier.createFilter',
+        CreateRegexFilter: 'logmagnifier.createRegexFilter',
+        DeleteGroup: 'logmagnifier.deleteGroup',
+        RenameFilterGroup: 'logmagnifier.renameFilterGroup',
+        ExportGroup: 'logmagnifier.exportGroup',
+        EditFilterItem: 'logmagnifier.editFilterItem',
+        AddSelectionToFilter: 'logmagnifier.addSelectionToFilter',
+        ExpandAllWordGroups: 'logmagnifier.expandAllWordGroups',
+        CollapseAllWordGroups: 'logmagnifier.collapseAllWordGroups',
+        ExpandAllRegexGroups: 'logmagnifier.expandAllRegexGroups',
+        CollapseAllRegexGroups: 'logmagnifier.collapseAllRegexGroups',
+        EnableAllItemsInGroup: 'logmagnifier.enableAllItemsInGroup',
+        DisableAllItemsInGroup: 'logmagnifier.disableAllItemsInGroup',
+
         // ... (existing commands)
     },
 
@@ -116,6 +170,8 @@ export const Constants = {
         QuickAccess: 'logmagnifier-quick-access',
         Filters: 'logmagnifier-filters',
         RegexFilters: 'logmagnifier-regex-filters',
+        ADBLogcat: 'logmagnifier-adb-logcat',
+        Bookmark: 'logmagnifier-bookmark',
     },
 
     Configuration: {
@@ -155,6 +211,29 @@ export const Constants = {
         SelectImportMode: 'Select import mode',
         EnterProfileName: 'Enter Profile Name',
         SelectProfileFromList: 'Select a Profile',
+        EnterSessionName: 'Enter Session Name',
+        EnterTagTimestamp: 'Enter Tag and Priority (e.g. MyApp:D)',
+        EditTag: 'Edit Tag',
+        UninstallConfirm: 'Are you sure you want to uninstall {0}?',
+        ClearStorageConfirm: 'Are you sure you want to clear storage for {0}?',
+        EnterNewGroupName: 'Enter new group name',
+        EnterNickname: 'Enter Name (Nickname)',
+        EnterNewKeyword: 'Enter new keyword',
+        EnterNewProfileName: 'Enter name for new profile',
+        EnterDuplicateProfileName: 'Enter name for duplicated profile',
+        SelectOccurrencesHighlightMode: 'Select Occurrences Highlight Mode (Current: {0})',
+        ConfirmDeleteProfile: 'Are you sure you want to delete profile \'{0}\'?',
+        ExportWordFilters: 'Export Word Filters',
+        ExportRegexFilters: 'Export Regex Filters',
+        ExportGroup: 'Export Group: {0}',
+        ImportWordFilters: 'Import Word Filters',
+        ImportRegexFilters: 'Import Regex Filters',
+    },
+
+    PlaceHolders: {
+        SessionName: 'My App Debug',
+        TagFormat: 'Tag:Priority',
+        SelectTargetApp: 'Select Target Application (filters by PID)',
     },
 
     FilterTypes: {
@@ -185,6 +264,25 @@ export const Constants = {
         MB: 'MB',
         NA: 'N/A',
         DefaultProfile: 'Default',
+        All: 'all',
+        ShowAllLogs: 'Show all logs',
+        Running: '(running)',
+        UserApps: 'User Apps (3rd-Party)',
+        SystemApps: 'System Apps',
+        Off: 'Off',
+        SingleFile: 'Single File',
+        MultiFile: 'Multi File',
+        NewProfile: 'New Profile...',
+        DuplicateProfile: 'Duplicate Profile...',
+    },
+
+    Descriptions: {
+        OccurrencesOff: 'Disable occurrences highlight',
+        OccurrencesSingle: 'Highlight occurrences in the current file only',
+        OccurrencesMulti: 'Highlight occurrences across all open files',
+        CreateNewProfile: 'Create a new empty profile',
+        DuplicateProfile: 'Make a copy of the current profile',
+        SwitchProfile: 'Switch to this profile',
     },
 
     ImportModes: {

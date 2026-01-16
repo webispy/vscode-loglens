@@ -4,6 +4,7 @@ import { LogcatService } from './LogcatService';
 import { LogcatTreeProvider } from '../views/LogcatTreeProvider';
 import { AdbDevice, LogcatSession, LogcatTag, LogPriority, ControlActionItem, ControlDeviceActionItem } from '../models/LogcatModels';
 import * as crypto from 'crypto';
+import { Constants } from '../constants';
 
 export class LogcatCommandManager {
     constructor(
@@ -15,11 +16,11 @@ export class LogcatCommandManager {
     }
 
     private registerCommands() {
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.refreshDevices', async () => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RefreshDevices, async () => {
             await this.treeProvider.refreshDevices();
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.addLogcatSession', async (arg: any) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.AddLogcatSession, async (arg: any) => {
             let device: AdbDevice | undefined;
             if (arg.type === 'sessionGroup') {
                 device = arg.device;
@@ -32,8 +33,8 @@ export class LogcatCommandManager {
             const defaultName = `Session ${existingSessions.length + 1}`;
 
             const name = await vscode.window.showInputBox({
-                prompt: 'Enter Session Name',
-                placeHolder: 'My App Debug',
+                prompt: Constants.Prompts.EnterSessionName,
+                placeHolder: Constants.PlaceHolders.SessionName,
                 value: defaultName,
                 valueSelection: [0, defaultName.length]
             });
@@ -42,19 +43,19 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.startLogcatSession', async (session: LogcatSession) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.StartLogcatSession, async (session: LogcatSession) => {
             if (session) {
                 await this.logcatService.startSession(session.id);
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.stopLogcatSession', async (session: LogcatSession) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.StopLogcatSession, async (session: LogcatSession) => {
             if (session) {
                 this.logcatService.stopSession(session.id);
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.removeLogcatSession', async (session: LogcatSession) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RemoveLogcatSession, async (session: LogcatSession) => {
             if (session) {
                 if (session.isRunning) {
                     this.logcatService.stopSession(session.id);
@@ -63,25 +64,25 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.session.enableTimeFilter', async (session: LogcatSession) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.SessionEnableTimeFilter, async (session: LogcatSession) => {
             if (session) {
                 this.logcatService.toggleSessionTimeFilter(session.id);
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.session.disableTimeFilter', async (session: LogcatSession) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.SessionDisableTimeFilter, async (session: LogcatSession) => {
             if (session) {
                 this.logcatService.toggleSessionTimeFilter(session.id);
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.addLogcatTag', async (session: LogcatSession) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.AddLogcatTag, async (session: LogcatSession) => {
             if (!session) { return; }
 
             // Input format: Tag:Priority or just Tag
             const input = await vscode.window.showInputBox({
-                prompt: 'Enter Tag and Priority (e.g. MyApp:D)',
-                placeHolder: 'Tag:Priority'
+                prompt: Constants.Prompts.EnterTagTimestamp,
+                placeHolder: Constants.PlaceHolders.TagFormat
             });
 
             if (input) {
@@ -94,7 +95,7 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.editLogcatTag', async (tag: LogcatTag) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.EditLogcatTag, async (tag: LogcatTag) => {
             // Context resolution might be tricky if "tag" object doesn't have parent session info easily available.
             // But validation logic "viewItem == tag_editable" ensures we only call this when valid.
             // However, we need the sessionId to update it.
@@ -104,7 +105,7 @@ export class LogcatCommandManager {
 
             const current = `${tag.name}:${tag.priority}`;
             const input = await vscode.window.showInputBox({
-                prompt: 'Edit Tag',
+                prompt: Constants.Prompts.EditTag,
                 value: current
             });
 
@@ -119,13 +120,13 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.removeLogcatTag', async (tag: LogcatTag) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RemoveLogcatTag, async (tag: LogcatTag) => {
             const session = this.logcatService.getSessions().find(s => s.tags.find(t => t.id === tag.id));
             if (!session) { return; }
             this.logcatService.removeTag(session.id, tag.id);
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.pickTargetApp', async (item: any) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.PickTargetApp, async (item: any) => {
             // item is TargetAppItem
             const device = item.device;
             if (!device) { return; }
@@ -137,8 +138,8 @@ export class LogcatCommandManager {
 
             // 1st: 'all'
             quickPickItems.push({
-                label: 'all',
-                description: 'Show all logs'
+                label: Constants.Labels.All,
+                description: Constants.Labels.ShowAllLogs
             });
 
             const userRunning: vscode.QuickPickItem[] = [];
@@ -148,12 +149,12 @@ export class LogcatCommandManager {
                 if (thirdPartyPackages.has(pkg)) {
                     userRunning.push({
                         label: pkg,
-                        description: '(running)'
+                        description: Constants.Labels.Running
                     });
                 } else {
                     systemRunning.push({
                         label: pkg,
-                        description: '(running)'
+                        description: Constants.Labels.Running
                     });
                 }
             });
@@ -165,7 +166,7 @@ export class LogcatCommandManager {
             // 2nd: Installed and 3rd-party packages with running apps(A-Z)
             if (userRunning.length > 0) {
                 quickPickItems.push({
-                    label: 'User Apps (3rd-Party)',
+                    label: Constants.Labels.UserApps,
                     kind: vscode.QuickPickItemKind.Separator
                 });
                 quickPickItems.push(...userRunning);
@@ -174,14 +175,14 @@ export class LogcatCommandManager {
             // 3rd: Installed and Running apps (A-Z) - System
             if (systemRunning.length > 0) {
                 quickPickItems.push({
-                    label: 'System Apps',
+                    label: Constants.Labels.SystemApps,
                     kind: vscode.QuickPickItemKind.Separator
                 });
                 quickPickItems.push(...systemRunning);
             }
 
             const picked = await vscode.window.showQuickPick(quickPickItems, {
-                placeHolder: 'Select Target Application (filters by PID)',
+                placeHolder: Constants.PlaceHolders.SelectTargetApp,
                 matchOnDetail: true
             });
 
@@ -190,10 +191,10 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.uninstall', async (item: ControlActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlUninstall, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 const answer = await vscode.window.showWarningMessage(
-                    `Are you sure you want to uninstall ${item.device.targetApp}?`,
+                    Constants.Prompts.UninstallConfirm.replace('{0}', item.device.targetApp),
                     'Yes', 'No'
                 );
                 if (answer !== 'Yes') { return; }
@@ -208,10 +209,10 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.clearStorage', async (item: ControlActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlClearStorage, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 const answer = await vscode.window.showWarningMessage(
-                    `Are you sure you want to clear storage for ${item.device.targetApp}?`,
+                    Constants.Prompts.ClearStorageConfirm.replace('{0}', item.device.targetApp),
                     'Yes', 'No'
                 );
                 if (answer !== 'Yes') { return; }
@@ -225,7 +226,7 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.clearCache', async (item: ControlActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlClearCache, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 const success = await this.logcatService.clearAppCache(item.device.id, item.device.targetApp);
                 // Clear cache might not return "Success" explicitly in stdout so we trust the boolean Result
@@ -237,7 +238,7 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.dumpsys', async (item: ControlActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlDumpsys, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 try {
                     const result = await this.logcatService.runDumpsysPackage(item.device.id, item.device.targetApp);
@@ -266,7 +267,7 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.dumpsysMeminfo', async (item: ControlActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlDumpsysMeminfo, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 try {
                     const result = await this.logcatService.runDumpsysMeminfo(item.device.id, item.device.targetApp);
@@ -295,7 +296,7 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.dumpsysActivity', async (item: ControlActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlDumpsysActivity, async (item: ControlActionItem) => {
             if (item && item.device && item.device.targetApp) {
                 try {
                     const result = await this.logcatService.runDumpsysActivity(item.device.id, item.device.targetApp);
@@ -324,7 +325,7 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.screenshot', async (item: ControlDeviceActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlScreenshot, async (item: ControlDeviceActionItem) => {
             if (item && item.device) {
                 const os = require('os');
                 const path = require('path');
@@ -345,7 +346,7 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.startScreenRecord', async (item: ControlDeviceActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlStartScreenRecord, async (item: ControlDeviceActionItem) => {
             if (item && item.device) {
                 const success = await this.logcatService.startRecording(item.device.id);
                 if (success) {
@@ -354,13 +355,13 @@ export class LogcatCommandManager {
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.stopScreenRecord', async (item: ControlDeviceActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlStopScreenRecord, async (item: ControlDeviceActionItem) => {
             if (item && item.device) {
                 await this.logcatService.stopRecording(item.device.id);
             }
         }));
 
-        this.context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.control.toggleShowTouches', async (item: ControlDeviceActionItem) => {
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ControlToggleShowTouches, async (item: ControlDeviceActionItem) => {
             if (item && item.device) {
                 await this.logcatService.toggleShowTouches(item.device.id);
             }

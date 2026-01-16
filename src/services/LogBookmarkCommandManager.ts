@@ -14,9 +14,9 @@ export class LogBookmarkCommandManager {
     }
 
     private registerCommands(context: vscode.ExtensionContext) {
-        context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.addBookmark', () => this.addBookmark()));
-        context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.removeBookmark', (item: BookmarkItem) => this.removeBookmark(item)));
-        context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.jumpToBookmark', (item: BookmarkItem) => this.jumpToBookmark(item)));
+        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.AddBookmark, () => this.addBookmark()));
+        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RemoveBookmark, (item: BookmarkItem) => this.removeBookmark(item)));
+        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.JumpToBookmark, (item: BookmarkItem) => this.jumpToBookmark(item)));
     }
 
     private addBookmark() {

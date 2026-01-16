@@ -129,9 +129,8 @@ export class LogcatService {
     public async getRunningApps(deviceId: string): Promise<Set<string>> {
         return new Promise((resolve) => {
             const adbPath = this.getAdbPath();
-            // ps -A to get all processes. 
+            // ps -A (newer Android) or fallback to ps (older Android)
             // format: USER PID PPID VSZ RSS WCHAN ADDR S NAME
-            // Check if -A is supported (newer android) or just ps
             const cmd = `${adbPath} -s ${deviceId} shell ps -A`;
             this.logger.info(`[ADB] Getting running apps: ${cmd}`);
 
@@ -185,8 +184,7 @@ export class LogcatService {
                     return;
                 }
 
-                // Fallback to ps
-                // ps -A for newer, ps for older
+                // Fallback: ps -A (newer) or ps (older)
                 const cmd = `${adbPath} -s ${deviceId} shell ps -A`;
                 cp.exec(cmd, (err2, stdout2) => {
                     if (err2) {
@@ -279,9 +277,8 @@ export class LogcatService {
             const args = ['-s', session.device.id, 'logcat'];
 
             // Add default options (split by space)
-            // We need to carefully handle -T and -t if useStartFromCurrentTime is toggled.
-            // If useStartFromCurrentTime is true, we ensure -T 1 is present (or leave as is if user provided it).
-            // If false, we must filter OUT -T or -t from default options.
+            // If useStartFromCurrentTime is false, we filter OUT time flags (-T or -t) from default options.
+            // If true, we ensure -T 1 is present later if not in default options.
 
             const startFromNow = session.useStartFromCurrentTime !== false; // Default true
 
@@ -301,20 +298,8 @@ export class LogcatService {
                 }
             }
 
-            // If we want startFromNow, ensure -T 1 is there if not added by default options
-            // But checking if "args" already has -T is tricky because it might be part of defaultOptions which we just added.
-            // The defaultOptions usually contains "-T 1". 
-            // If startFromNow is TRUE, we just appended default options. If default options has -T 1, good.
-            // If default options DOES NOT have -T 1, but we want it? 
-            // Let's assume defaultOptions is the source of truth for "base" args. 
-            // If user wants "Start from Now" but removed -T 1 from config, maybe we should force it?
-            // Current behavior: "defaultOptions" holds the preference. 
-            // But now we have a per-session toggle.
-            // So:
-            // 1. Process defaultOptions. Remove any -T/-t if startFromNow == false.
-            // 2. If startFromNow == true, AND we didn't see -T/-t in defaultOptions (or even if we did?), make sure it's applied?
-            // Actually, if defaultOptions has -T 1, and we pushed it, we are good.
-            // If defaultOptions DOES NOT have -T 1, and startFromNow is true, we should probably Add it.
+            // If startFromNow is enabled and no time flag (-T or -t) exists in args (from defaultOptions),
+            // force adding '-T 1' to ensure we only show logs from now.
 
             const hasTimeArg = args.includes('-T') || args.includes('-t');
             if (startFromNow && !hasTimeArg) {
@@ -332,10 +317,8 @@ export class LogcatService {
                 }
             }
 
-            // Add tag filters
-            // Format: Tag:Priority ... *:S (if we want to exclude others)
-            // If no tags, we usually show everything (*:V)
-            // If tags are present, we typically default others to Silent (*:S) unless specified
+            // Add tag filters (Tag:Priority).
+            // If tags are present, default others to Silent (*:S). Otherwise show all (*:V).
 
             if (session.tags.length > 0) {
                 session.tags.forEach(tag => {
@@ -343,10 +326,7 @@ export class LogcatService {
                         args.push(`${tag.name}:${tag.priority}`);
                     }
                 });
-                // If we have specific filters, we likely want to silence everything else
-                // But user might want "Mixed Mode" where they see everything but highlighted.
-                // For 'filtering' via adb, we add *:S.
-                // Let's assume strict filtering for now as per "Filter View" paradigm.
+                // Strictly filter logs based on the tags.
                 args.push('*:S');
             } else {
                 args.push('*:V');
@@ -737,9 +717,7 @@ export class LogcatService {
             this.logger.info(`[ADB] Local adb process closed on ${deviceId} (code ${code})`);
             this.recordingProcesses.delete(deviceId);
 
-            // Note: We don't verify 'stoppingDevices' here because we want to trigger the check/pull regardless of how it stopped.
-            // If it was stopped manually via stopRecording, the spinner is active.
-            // If it stopped by itself (limit reached), the spinner might not be active, but we still pull.
+            // Trigger pull regardless of how it stopped (manual stop or limit reached).
 
             this._onDidChangeSessions.fire();
 
@@ -828,7 +806,7 @@ export class LogcatService {
             info.process.kill();
         }
 
-        // Cleanup map logic and stopping state clearing is in 'close' handler
+        // Cleanup map logic and stopping state clearing is handled in 'close' handler.
     }
 
     private async checkAndPullRecording(deviceId: string, remotePath: string): Promise<void> {

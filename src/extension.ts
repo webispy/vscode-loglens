@@ -14,6 +14,7 @@ import { LogcatCommandManager } from './services/LogcatCommandManager';
 import { LogBookmarkService } from './services/LogBookmarkService';
 import { LogBookmarkWebviewProvider } from './views/LogBookmarkWebviewProvider';
 import { LogBookmarkCommandManager } from './services/LogBookmarkCommandManager';
+import { Constants } from './constants';
 
 export function activate(context: vscode.ExtensionContext) {
 	const filterManager = new FilterManager(context);
@@ -30,14 +31,14 @@ export function activate(context: vscode.ExtensionContext) {
 	let lastProcessedDoc: vscode.TextDocument | undefined;
 
 	const wordTreeDataProvider = new FilterTreeDataProvider(filterManager, 'word');
-	const wordTreeView = vscode.window.createTreeView('logmagnifier-filters', {
+	const wordTreeView = vscode.window.createTreeView(Constants.Views.Filters, {
 		treeDataProvider: wordTreeDataProvider,
 		dragAndDropController: wordTreeDataProvider,
 		showCollapseAll: false
 	});
 
 	const regexTreeDataProvider = new FilterTreeDataProvider(filterManager, 'regex');
-	const regexTreeView = vscode.window.createTreeView('logmagnifier-regex-filters', {
+	const regexTreeView = vscode.window.createTreeView(Constants.Views.RegexFilters, {
 		treeDataProvider: regexTreeDataProvider,
 		dragAndDropController: regexTreeDataProvider,
 		showCollapseAll: false
@@ -70,7 +71,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// ADB Logcat
 	const logcatService = new LogcatService(logger);
 	const logcatTreeProvider = new LogcatTreeProvider(logcatService);
-	vscode.window.registerTreeDataProvider('logmagnifier-adb-logcat', logcatTreeProvider);
+	vscode.window.registerTreeDataProvider(Constants.Views.ADBLogcat, logcatTreeProvider);
 	new LogcatCommandManager(context, logcatService, logcatTreeProvider);
 
 	// Defer ADB device fetching to avoid slowing down extension activation
@@ -84,12 +85,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const bookmarkWebviewProvider = new LogBookmarkWebviewProvider(context.extensionUri, bookmarkService);
 	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider('logmagnifier-bookmark', bookmarkWebviewProvider)
+		vscode.window.registerWebviewViewProvider(Constants.Views.Bookmark, bookmarkWebviewProvider)
 	);
 
 	new LogBookmarkCommandManager(context, bookmarkService, highlightService);
 
-	vscode.window.createTreeView('logmagnifier-quick-access', { treeDataProvider: quickAccessProvider });
+	vscode.window.createTreeView(Constants.Views.QuickAccess, { treeDataProvider: quickAccessProvider });
 
 	// Update highlights and counts when active editor changes
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
