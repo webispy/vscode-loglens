@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 import { BookmarkItem } from '../models/Bookmark';
+import { Constants } from '../constants';
+
+import { Logger } from './Logger';
 
 export class LogBookmarkService implements vscode.Disposable {
     private _bookmarks: Map<string, BookmarkItem[]> = new Map();
@@ -8,13 +11,21 @@ export class LogBookmarkService implements vscode.Disposable {
 
     private decorationType: vscode.TextEditorDecorationType;
 
+    private context: vscode.ExtensionContext;
+    private logger: Logger;
+
     constructor(context: vscode.ExtensionContext) {
+        this.context = context;
+        this.logger = Logger.getInstance();
         this.decorationType = vscode.window.createTextEditorDecorationType({
             gutterIconPath: context.asAbsolutePath('resources/bookmark.svg'),
             gutterIconSize: 'contain',
             overviewRulerColor: 'blue',
             overviewRulerLane: vscode.OverviewRulerLane.Right
         });
+
+        // Load bookmarks from state
+        this.loadFromState();
 
         // Listen for editor changes to update decorations
         vscode.window.onDidChangeVisibleTextEditors(editors => {
@@ -67,6 +78,8 @@ export class LogBookmarkService implements vscode.Disposable {
                 this.updateDecorations(e);
             }
         });
+
+        this.saveToState();
     }
 
     public removeBookmark(item: BookmarkItem) {
@@ -87,6 +100,8 @@ export class LogBookmarkService implements vscode.Disposable {
                         this.updateDecorations(e);
                     }
                 });
+
+                this.saveToState();
             }
         }
     }
@@ -100,6 +115,7 @@ export class LogBookmarkService implements vscode.Disposable {
         if (this._bookmarks.has(key)) {
             this._bookmarks.delete(key);
             this._onDidChangeBookmarks.fire();
+            this.saveToState();
         }
     }
 
@@ -125,5 +141,50 @@ export class LogBookmarkService implements vscode.Disposable {
     public dispose() {
         this.decorationType.dispose();
         this._onDidChangeBookmarks.dispose();
+    }
+
+    private async saveToState() {
+        const bookmarksData: { [key: string]: any[] } = {};
+        for (const [key, bookmarks] of this._bookmarks) {
+            bookmarksData[key] = bookmarks.map(b => ({
+                id: b.id,
+                uri: b.uri.toString(), // Store URI as string
+                line: b.line,
+                content: b.content
+            }));
+        }
+        await this.context.globalState.update(Constants.GlobalState.Bookmarks, bookmarksData);
+        this.logger.info(`Saved bookmarks to state: ${Object.keys(bookmarksData).length} files.`);
+    }
+
+    private loadFromState() {
+        const bookmarksData = this.context.globalState.get<{ [key: string]: any[] }>(Constants.GlobalState.Bookmarks);
+        this.logger.info(`Loading bookmarks from state... Found: ${bookmarksData ? Object.keys(bookmarksData).length + ' files' : 'None'}`);
+        if (bookmarksData) {
+            for (const key in bookmarksData) {
+                const bookmarks = bookmarksData[key].map(b => {
+                    try {
+                        return {
+                            id: b.id,
+                            uri: vscode.Uri.parse(b.uri), // Restore URI
+                            line: b.line,
+                            content: b.content
+                        } as BookmarkItem;
+                    } catch (e) {
+                        console.error('Failed to restore bookmark uri', b.uri, e);
+                        return null;
+                    }
+                }).filter(b => b !== null) as BookmarkItem[];
+
+                if (bookmarks.length > 0) {
+                    this._bookmarks.set(key, bookmarks);
+                }
+            }
+            // Notify that bookmarks are loaded, though UI might not be ready.
+            // But existing open editors will get decorations via onDidChangeVisibleTextEditors callback if they become active/visible?
+            // Actually, we should probably manually trigger an update if there are active editors right now.
+            vscode.window.visibleTextEditors.forEach(editor => this.updateDecorations(editor));
+            this._onDidChangeBookmarks.fire();
+        }
     }
 }

@@ -164,6 +164,7 @@ export const Constants = {
         FilterGroups: 'logmagnifier.filterGroups',
         FilterProfiles: 'logmagnifier.filterProfiles',
         ActiveProfile: 'logmagnifier.activeProfile',
+        Bookmarks: 'logmagnifier.bookmarks',
     },
 
     Labels: {
