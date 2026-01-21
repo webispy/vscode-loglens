@@ -348,6 +348,16 @@
         }
       },
       {
+        "title": "Remove Matches",
+        "properties": {
+          "logmagnifier.removeMatches.maxLines": {
+            "type": "number",
+            "default": 2000,
+            "description": "Threshold for confirming removal of lines matching selection."
+          }
+        }
+      },
+      {
         "title": "Android",
         "properties": {
           "logmagnifier.adbPath": {

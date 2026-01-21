@@ -202,6 +202,7 @@ export const Constants = {
             MinimapEnabled: 'minimap.enabled',
             StickyScrollEnabled: 'stickyScroll.enabled',
             NavigationAnimation: 'editor.navigationAnimation',
+            RemoveMatchesMaxLines: 'removeMatches.maxLines',
         },
     },
 

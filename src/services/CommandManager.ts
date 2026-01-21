@@ -317,7 +317,10 @@ export class CommandManager {
             }
 
             // Confirm deletion if many lines
-            if (matchCount > 100) {
+            const config = vscode.workspace.getConfiguration(Constants.Configuration.Section);
+            const removeMatchesMaxLines = config.get<number>(Constants.Configuration.Editor.RemoveMatchesMaxLines, 2000);
+
+            if (matchCount > removeMatchesMaxLines) {
                 const response = await vscode.window.showWarningMessage(
                     `Are you sure you want to remove ${matchCount} lines matching '${selectedText}'?`,
                     'Yes', 'No'
