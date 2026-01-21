@@ -213,7 +213,7 @@ export class CommandManager {
                 return;
             }
 
-            const selectedText = editor.document.getText(editor.selection).trim();
+            const selectedText = editor.document.getText(editor.selection);
             if (!selectedText) {
                 return;
             }
