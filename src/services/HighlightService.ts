@@ -249,7 +249,29 @@ export class HighlightService implements vscode.Disposable {
         return matchCounts;
     }
 
-    public flashLine(editor: vscode.TextEditor, line: number, color?: string | { light: string, dark: string }) {
+    private getEffectiveLineColor(text: string): string | undefined {
+        const activeGroups = this.filterManager.getGroups().filter(g => g.isEnabled);
+        const enableRegexHighlight = vscode.workspace.getConfiguration(Constants.Configuration.Section).get<boolean>(Constants.Configuration.Regex.EnableHighlight) || false;
+
+        // Check all filters to find a match
+        for (const group of activeGroups) {
+            for (const filter of group.filters) {
+                if (!filter.isEnabled || !filter.keyword) { continue; }
+                if (filter.isRegex && !enableRegexHighlight) { continue; }
+
+                try {
+                    const regex = RegexUtils.create(filter.keyword, !!filter.isRegex, !!filter.caseSensitive);
+                    if (regex.test(text)) {
+                        const defaultColor = vscode.workspace.getConfiguration(Constants.Configuration.Section).get<string | { light: string, dark: string }>(Constants.Configuration.Regex.HighlightColor) || Constants.Configuration.Regex.DefaultHighlightColor;
+                        return filter.color || (typeof defaultColor === 'string' ? defaultColor : undefined);
+                    }
+                } catch (e) { }
+            }
+        }
+        return undefined;
+    }
+
+    public flashLine(editor: vscode.TextEditor, line: number, forceColor?: string | { light: string, dark: string }) {
         if (!editor || line < 0) { return; }
 
         const config = vscode.workspace.getConfiguration(Constants.Configuration.Section);
@@ -268,26 +290,32 @@ export class HighlightService implements vscode.Disposable {
         }
 
         const range = editor.document.lineAt(line).range;
+        const lineText = editor.document.lineAt(line).text;
 
         // Resolve Color
+        let colorToUse = forceColor;
+        if (!colorToUse) {
+            colorToUse = this.getEffectiveLineColor(lineText);
+        }
+
         let decorationOptions: vscode.DecorationRenderOptions = {
             isWholeLine: true,
             fontWeight: 'bold'
         };
 
-        if (color) {
-            if (typeof color === 'string') {
-                const preset = this.filterManager.getPresetById(color);
+        if (colorToUse) {
+            if (typeof colorToUse === 'string') {
+                const preset = this.filterManager.getPresetById(colorToUse);
                 if (preset) {
                     decorationOptions.light = { backgroundColor: preset.light };
                     decorationOptions.dark = { backgroundColor: preset.dark };
                 } else {
-                    decorationOptions.backgroundColor = color;
+                    decorationOptions.backgroundColor = colorToUse;
                 }
             } else {
                 // It is already { light, dark } object
-                decorationOptions.light = { backgroundColor: color.light };
-                decorationOptions.dark = { backgroundColor: color.dark };
+                decorationOptions.light = { backgroundColor: colorToUse.light };
+                decorationOptions.dark = { backgroundColor: colorToUse.dark };
             }
         } else {
             // Default match highlight

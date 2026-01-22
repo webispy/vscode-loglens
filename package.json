@@ -807,6 +807,11 @@
         "icon": "$(collapse-all)"
       },
       {
+        "command": "logmagnifier.jumpToSource",
+        "title": "Jump to Original Log Line",
+        "icon": "$(go-to-file)"
+      },
+      {
         "command": "logmagnifier.renameFilterGroup",
         "title": "Rename Group...",
         "icon": "$(edit)"
@@ -1454,6 +1459,11 @@
           "command": "logmagnifier.removeBookmark",
           "when": "view == logmagnifier-bookmark && viewItem == bookmark",
           "group": "inline"
+        },
+        {
+          "command": "logmagnifier.jumpToSource",
+          "when": "editorTextFocus && logmagnifier.isFilteredLog",
+          "group": "navigation"
         }
       ]
     }

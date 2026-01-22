@@ -138,6 +138,7 @@ export const Constants = {
         AddSelectionMatchesToBookmark: 'logmagnifier.addSelectionMatchesToBookmark',
         RemoveBookmark: 'logmagnifier.removeBookmark',
         JumpToBookmark: 'logmagnifier.jumpToBookmark',
+        JumpToSource: 'logmagnifier.jumpToSource',
 
         // Other shortcuts / Context menu
         CopyGroupEnabledItems: 'logmagnifier.copyGroupEnabledItems',

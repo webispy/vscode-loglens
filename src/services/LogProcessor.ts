@@ -40,7 +40,7 @@ export class LogProcessor {
      * @returns Promise resolving to output path and statistics
      * @throws Error if file cannot be read or written
      */
-    public async processFile(inputPath: string, filterGroups: FilterGroup[], options?: { prependLineNumbers?: boolean, totalLineCount?: number }): Promise<{ outputPath: string, processed: number, matched: number }> {
+    public async processFile(inputPath: string, filterGroups: FilterGroup[], options?: { prependLineNumbers?: boolean, totalLineCount?: number }): Promise<{ outputPath: string, processed: number, matched: number, lineMapping: number[] }> {
         const fileStream = fs.createReadStream(inputPath, { encoding: 'utf8' });
 
         fileStream.on('error', (err) => {
@@ -79,6 +79,10 @@ export class LogProcessor {
         let afterLinesRemaining = 0;
         let lastWrittenLineIndex = -1; // Index of the last line written to output
 
+        // Line Mapping: Index = Output Line Number, Value = Source Line Number
+        const lineMapping: number[] = [];
+        let outputLineCounter = 0;
+
         // Padding calculation
         const prependLineNumbers = options?.prependLineNumbers || false;
         const totalLineCount = options?.totalLineCount || DEFAULT_MAX_LINE_COUNT;
@@ -91,9 +95,25 @@ export class LogProcessor {
             return line;
         };
 
+        const writeLine = (line: string, originalIndex: number) => {
+            if (!outputStream.write(formatLine(line, originalIndex) + '\n')) {
+                // We could await drain here, but for simplicity in this synchronous-like wrapper, we rely on stream buffering
+                // or extensive async handling. The original code had async drain logic.
+                // We'll keep it simple or re-integrate if needed.
+                // Actually, original code had `await new Promise...`. We need to handle that.
+                return false;
+            }
+            lineMapping.push(originalIndex);
+            outputLineCounter++;
+            return true;
+        };
+
         try {
             for await (const line of rl) {
-                processed++;
+                processed++; // 1-based index for display, but 0-based for logic often? 
+                // Wait, processed matches `index` in formatLine, which is passed as `processed`.
+                // Let's stick to the existing convention: processed is 1-based index of Current Line.
+                const currentLineIndex = processed - 1; // 0-based index for mapping
 
                 const matchResult = this.checkMatchCompiled(line, compiledGroups);
 
@@ -108,7 +128,7 @@ export class LogProcessor {
                     for (let i = 0; i < linesToSubmit.length; i++) {
                         const bufferedItem = linesToSubmit[i];
                         if (bufferedItem.index > lastWrittenLineIndex) {
-                            if (!outputStream.write(formatLine(bufferedItem.line, bufferedItem.index) + '\n')) {
+                            if (!writeLine(bufferedItem.line, bufferedItem.index)) {
                                 await new Promise<void>(resolve => outputStream.once('drain', () => resolve()));
                             }
                             lastWrittenLineIndex = bufferedItem.index;
@@ -117,7 +137,7 @@ export class LogProcessor {
 
                     // 2. Write current matching line
                     if (processed > lastWrittenLineIndex) {
-                        if (!outputStream.write(formatLine(line, processed) + '\n')) {
+                        if (!writeLine(line, processed)) {
                             await new Promise<void>(resolve => outputStream.once('drain', () => resolve()));
                         }
                         lastWrittenLineIndex = processed;
@@ -128,7 +148,7 @@ export class LogProcessor {
                 } else if (afterLinesRemaining > 0) {
                     // This is an 'After' context line
                     if (processed > lastWrittenLineIndex) {
-                        if (!outputStream.write(formatLine(line, processed) + '\n')) {
+                        if (!writeLine(line, processed)) {
                             await new Promise<void>(resolve => outputStream.once('drain', () => resolve()));
                         }
                         lastWrittenLineIndex = processed;
@@ -147,7 +167,12 @@ export class LogProcessor {
             await new Promise<void>(resolve => outputStream.on('finish', () => resolve()));
         }
 
-        return { outputPath, processed, matched };
+        // Adjust mapping to be 0-based for VS Code Positions
+        // currently `lineMapping` stores 1-based line numbers from `processed`.
+        // We should convert them to 0-based.
+        const adjustedMapping = lineMapping.map(l => l - 1);
+
+        return { outputPath, processed, matched, lineMapping: adjustedMapping };
     }
 
     /**

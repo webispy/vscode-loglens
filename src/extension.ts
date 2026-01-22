@@ -15,15 +15,18 @@ import { LogBookmarkService } from './services/LogBookmarkService';
 import { LogBookmarkWebviewProvider } from './views/LogBookmarkWebviewProvider';
 import { LogBookmarkCommandManager } from './services/LogBookmarkCommandManager';
 import { JsonPrettyService } from './services/JsonPrettyService';
+import { SourceMapService } from './services/SourceMapService';
+import { FilteredLogDefinitionProvider } from './providers/FilteredLogDefinitionProvider';
 import { Constants } from './constants';
 
 export function activate(context: vscode.ExtensionContext) {
+	const logger = Logger.getInstance();
+	logger.info('LogMagnifier activated');
+
 	const filterManager = new FilterManager(context);
 
 	const quickAccessProvider = new QuickAccessProvider(filterManager);
 	const logProcessor = new LogProcessor();
-	const logger = Logger.getInstance();
-	logger.info('LogMagnifier activated');
 
 	const highlightService = new HighlightService(filterManager, logger);
 	context.subscriptions.push(highlightService);
@@ -52,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const setupExpansionSync = (view: vscode.TreeView<any>) => {
 		context.subscriptions.push(view.onDidExpandElement(e => {
-			if (isGroup(e.element)) { // Check if group
+			if (isGroup(e.element)) {
 				filterManager.setGroupExpanded(e.element.id, true);
 			}
 		}));
@@ -66,9 +69,20 @@ export function activate(context: vscode.ExtensionContext) {
 	setupExpansionSync(wordTreeView);
 	setupExpansionSync(regexTreeView);
 
+	// Source Map Service
+	const sourceMapService = SourceMapService.getInstance();
+
+	// Register Definition Provider for Click-to-Navigate
+	context.subscriptions.push(
+		vscode.languages.registerDefinitionProvider(
+			{ scheme: '*', language: '*' }, // Try to catch everything
+			new FilteredLogDefinitionProvider(sourceMapService)
+		)
+	);
+
 	// Initialize Command Manager (Handles all command registrations)
 	const jsonPrettyService = new JsonPrettyService(logger);
-	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, quickAccessProvider, logger, wordTreeView, regexTreeView, jsonPrettyService);
+	new CommandManager(context, filterManager, highlightService, resultCountService, logProcessor, quickAccessProvider, logger, wordTreeView, regexTreeView, jsonPrettyService, sourceMapService);
 
 	// ADB Devices
 	const adbService = new AdbService(logger);
@@ -91,8 +105,29 @@ export function activate(context: vscode.ExtensionContext) {
 
 	vscode.window.createTreeView(Constants.Views.QuickAccess, { treeDataProvider: quickAccessProvider });
 
+	// Listen for selection changes to trigger navigation animation (flash)
+	context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection(e => {
+		const editor = e.textEditor;
+		if (editor && e.selections.length > 0) {
+			const line = e.selections[0].active.line;
+			if (sourceMapService.checkAndConsumePendingNavigation(editor.document.uri, line)) {
+				highlightService.flashLine(editor, line);
+			}
+		}
+	}));
+
 	// Update highlights and counts when active editor changes
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(editor => {
+		sourceMapService.updateContextKey(editor);
+
+		// Check for pending navigation (animation) on active editor change
+		if (editor && editor.selection) {
+			const line = editor.selection.active.line;
+			if (sourceMapService.checkAndConsumePendingNavigation(editor.document.uri, line)) {
+				highlightService.flashLine(editor, line);
+			}
+		}
+
 		quickAccessProvider.refresh();
 		if (editor) {
 			const scheme = editor.document.uri.scheme;

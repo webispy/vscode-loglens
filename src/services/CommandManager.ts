@@ -12,6 +12,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { JsonPrettyService } from './JsonPrettyService';
+import { SourceMapService } from './SourceMapService';
 
 export class CommandManager {
     constructor(
@@ -24,7 +25,8 @@ export class CommandManager {
         private logger: Logger,
         private wordTreeView: vscode.TreeView<FilterGroup | FilterItem>,
         private regexTreeView: vscode.TreeView<FilterGroup | FilterItem>,
-        private jsonPrettyService: JsonPrettyService
+        private jsonPrettyService: JsonPrettyService,
+        private sourceMapService: SourceMapService
     ) {
         this.registerCommands();
         // Initialize context key
@@ -49,6 +51,9 @@ export class CommandManager {
                 }
             }
         }));
+
+        // Register Source Map Command
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.JumpToSource, () => this.jumpToSource()));
 
         // Command: Add Regex Filter Group
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.AddRegexFilterGroup, async () => {
@@ -1001,6 +1006,30 @@ export class CommandManager {
                         outputPath = result.outputPath;
                         stats.processed = result.processed;
                         stats.matched = result.matched;
+
+                        // Register Source Map
+                        // If generated from a specific document, use its URI.
+                        // If generated from a file path (without doc), use file URI.
+                        let sourceUri: vscode.Uri | undefined;
+                        if (document) {
+                            sourceUri = document.uri;
+                        } else if (filePathFromTab) {
+                            sourceUri = vscode.Uri.file(filePathFromTab);
+                        }
+
+                        // Handle strict untitled file mapping:
+                        // If we created a temp input file for untitled doc, we still mapped lines from that content.
+                        // But the USER sees the 'untitled:Untitled-1' document.
+                        // Ideally we map back to the 'untitled:...' URI so opening it works if tab is open.
+                        // If tab is closed, we can't reopen 'untitled:' content easily unless we saved it?
+                        // Actually, SourceMapService stores the URI. clicking 'jumping' opens that URI.
+                        // If 'untitled', VSCode tries to find that open valid document.
+
+                        if (sourceUri && result.lineMapping) {
+                            const outputUri = vscode.Uri.file(outputPath);
+                            this.sourceMapService.register(outputUri, sourceUri, result.lineMapping);
+                        }
+
                     } finally {
                         // Cleanup temp input file if we created one
                         if (tempInputPath && fs.existsSync(tempInputPath)) {
@@ -1278,6 +1307,36 @@ export class CommandManager {
             } catch (e) {
                 this.logger.warn(`Failed to execute native collapse: ${e}`);
             }
+        }
+    }
+
+    private async jumpToSource() {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return;
+        }
+
+        const position = editor.selection.active;
+        const location = this.sourceMapService.getOriginalLocation(editor.document.uri, position.line);
+
+        if (location) {
+            try {
+                // Open document
+                const doc = await vscode.workspace.openTextDocument(location.uri);
+                const sourceEditor = await vscode.window.showTextDocument(doc, { preview: true });
+
+                // Reveal range
+                const range = new vscode.Range(location.range.start, location.range.start);
+                sourceEditor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+                sourceEditor.selection = new vscode.Selection(range.start, range.start);
+
+                // Flash line
+                this.highlightService.flashLine(sourceEditor, range.start.line);
+            } catch (e) {
+                vscode.window.showErrorMessage(`Failed to jump to source: ${e}`);
+            }
+        } else {
+            vscode.window.showInformationMessage('No source mapping found for this line.');
         }
     }
 }
