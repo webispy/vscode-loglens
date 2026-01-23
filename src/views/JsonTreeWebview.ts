@@ -3,12 +3,15 @@ import * as vscode from 'vscode';
 export class JsonTreeWebview {
     private panel: vscode.WebviewPanel | undefined;
 
+    private readonly _onDidRevealLine = new vscode.EventEmitter<{ uri: string, line: number }>();
+    public readonly onDidRevealLine = this._onDidRevealLine.event;
+
     constructor(private readonly extensionUri: vscode.Uri) { }
 
-    public show(data: any, title: string = 'JSON Preview', status: 'valid' | 'invalid' = 'valid') {
+    public show(data: any, title: string = 'JSON Preview', status: 'valid' | 'invalid' = 'valid', tabSize: number = 2, sourceUri?: string, sourceLine?: number) {
         if (this.panel) {
             this.panel.reveal(vscode.ViewColumn.Beside);
-            this.panel.webview.postMessage({ command: 'update', data, status });
+            this.panel.webview.postMessage({ command: 'update', data, status, tabSize, sourceUri, sourceLine });
         } else {
             this.panel = vscode.window.createWebviewPanel(
                 'logmagnifier-json-tree',
@@ -24,8 +27,14 @@ export class JsonTreeWebview {
                 this.panel = undefined;
             });
 
+            this.panel.webview.onDidReceiveMessage(message => {
+                if (message.command === 'reveal') {
+                    this._onDidRevealLine.fire({ uri: message.uri, line: message.line });
+                }
+            });
+
             // Initial data
-            this.panel.webview.html = this.getHtmlForWebview(data, status);
+            this.panel.webview.html = this.getHtmlForWebview(data, status, tabSize, sourceUri, sourceLine);
         }
     }
 
@@ -40,7 +49,7 @@ export class JsonTreeWebview {
         return !!this.panel;
     }
 
-    private getHtmlForWebview(data: any, status: 'valid' | 'invalid'): string {
+    private getHtmlForWebview(data: any, status: 'valid' | 'invalid', tabSize: number = 2, sourceUri?: string, sourceLine?: number): string {
         const initialData = JSON.stringify(data);
 
         return `<!DOCTYPE html>
@@ -90,19 +99,26 @@ export class JsonTreeWebview {
                     font-weight: bold;
                     /* text-decoration: underline wavy #d73a49; optional */
                 }
+                html {
+                    scroll-padding-top: 60px; /* Top toolbar space */
+                    scroll-padding-bottom: 60px; /* Bottom toolbar space */
+                }
                 body {
                     font-family: var(--vscode-editor-font-family); /* Use editor font for everything */
                     font-size: 14px; /* Larger text */
                     color: var(--vscode-editor-foreground);
                     background-color: var(--vscode-editor-background);
                     padding: 10px;
+                    padding-bottom: 50px; /* Space for bottom toolbar */
                     margin: 0;
                     overflow-x: hidden;
                 }
-                .toolbar {
+                .top-toolbar {
                     display: flex;
-                    justify-content: space-between;
+                    justify-content: flex-start;
                     align-items: center;
+                    flex-wrap: wrap; 
+                    gap: 8px;
                     padding-bottom: 8px;
                     border-bottom: 1px solid var(--vscode-widget-border);
                     margin-bottom: 15px;
@@ -115,34 +131,98 @@ export class JsonTreeWebview {
                     display: flex;
                     align-items: center;
                     gap: 6px;
+                    flex: 1; /* Take remaining space */
+                    min-width: 0;
                 }
+                .bottom-toolbar {
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 40px;
+                    background-color: var(--vscode-editor-background);
+                    border-top: 1px solid var(--vscode-widget-border);
+                    display: flex;
+                    align-items: center;
+                    padding: 0 10px;
+                    gap: 10px;
+                    z-index: 20;
+                    justify-content: flex-start;
+                }
+                
+                .search-wrapper {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    width: 35ch; /* User requested default 35 chars */
+                    max-width: 50ch; /* User requested max 50 chars */
+                    min-width: 10ch;
+                    flex-shrink: 1;
+                }
+
                 input[type="text"] {
                     background-color: var(--vscode-input-background);
                     color: var(--vscode-input-foreground);
                     border: 1px solid var(--vscode-input-border);
-                    padding: 6px;
+                    padding: 4px 6px;
+                    padding-right: 80px; /* Increased space for count */
                     border-radius: 2px;
                     font-size: 13px;
-                    width: 200px;
+                    width: 100%;
                 }
                 input[type="text"]:focus {
                     outline: 1px solid var(--vscode-focusBorder);
                 }
-                .count-label {
-                    font-size: 0.9em;
-                    margin-left: 4px;
-                    min-width: 60px;
+                
+                .count-overlay {
+                    position: absolute;
+                    right: 6px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    font-size: 13px; /* Same as input font size */
+                    color: var(--button-hover-bg); /* Distinct color, reusing a variable or set specific */
+                    color: #007acc; /* Example distinct color (VSCode Blue approx) or use var */
+                    color: var(--vscode-textLink-foreground); /* Better distinct theme-aware color */
+                    pointer-events: none; /* Let clicks pass through to input */
+                    white-space: nowrap;
+                    text-align: right;
+                    max-width: 75px; /* Increased to prevent truncation */
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
+                
+                .search-actions {
+                    display: flex;
+                    gap: 4px;
+                    flex-shrink: 0;
+                }
+
+                /* Text Label Buttons */
+                #btn-compact, #btn-toggle-view {
+                    /* Keep text but allow shrink if really needed already handled by button CSS */
+                }
+
+
                 button {
                     background: none;
                     border: 1px solid transparent;
                     color: var(--vscode-button-foreground);
                     background-color: var(--vscode-button-background);
-                    padding: 5px 10px;
+                    padding: 4px; /* Reduced padding for icons */
                     cursor: pointer;
                     border-radius: 2px;
-                    font-size: 13px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 24px;   /* Fixed height */
                 }
+                /* Text buttons override */
+                #btn-compact, #btn-toggle-view {
+                     width: auto;
+                     padding: 5px 10px;
+                     display: inline-block; /* revert flex center for text? or keep flex but auto width */
+                }
+                
                 button:hover {
                     background-color: var(--vscode-button-hoverBackground);
                 }
@@ -151,9 +231,20 @@ export class JsonTreeWebview {
                     cursor: not-allowed;
                 }
                 
+                button svg {
+                    width: 16px;
+                    height: 16px;
+                    fill: currentColor;
+                }
+                
                 .tree-root {
                     user-select: text; /* Allow selection */
                     padding-top: 4px;
+                }
+                
+                .text-block.compact-wrap {
+                    white-space: pre-wrap;
+                    word-break: break-all;
                 }
 
                 .tree-row {
@@ -248,68 +339,249 @@ export class JsonTreeWebview {
                     outline: 1px solid #fff;
                 }
 
+                .text-root {
+                    display: none;
+                    padding-top: 4px;
+                }
+
+                .text-block {
+                    white-space: pre-wrap;
+                    font-family: var(--vscode-editor-font-family);
+                    font-size: 13px; /* Slightly smaller for code */
+                    line-height: 1.5;
+                    margin-bottom: 30px;
+                    tab-size: 2;
+                }
+
             </style>
         </head>
         <body>
-            <div class="toolbar">
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search...">
-                    <button id="btn-prev" title="Previous Match" disabled>↑</button>
-                    <button id="btn-next" title="Next Match" disabled>↓</button>
-                    <span id="search-count" class="count-label"></span>
-                </div>
+            <div class="top-toolbar">
                 <button id="btn-collapse-all">Collapse All</button>
+                <button id="btn-compact" style="display: none;">Compact</button>
+                <button id="btn-toggle-view">Beautifier</button>
+                <button id="btn-reveal">Go to Definition</button>
             </div>
+            
             <div id="tree-container" class="tree-root" tabindex="0"></div>
+            <div id="text-container" class="text-root" tabindex="0"></div>
+
+            <div class="bottom-toolbar">
+                <div class="search-wrapper">
+                    <input type="text" id="search-input" placeholder="Search...">
+                    <span id="search-count" class="count-overlay"></span>
+                </div>
+                <div class="search-actions">
+                    <button id="btn-prev" disabled>Prev</button>
+                    <button id="btn-next" disabled>Next</button>
+                </div>
+            </div>
 
             <script>
                 const vscode = acquireVsCodeApi();
-                const container = document.getElementById('tree-container');
                 const searchInput = document.getElementById('search-input');
                 const btnPrev = document.getElementById('btn-prev');
                 const btnNext = document.getElementById('btn-next');
                 const countLabel = document.getElementById('search-count');
+                const btnToggleView = document.getElementById('btn-toggle-view');
+                const btnCompact = document.getElementById('btn-compact');
+                const btnReveal = document.getElementById('btn-reveal');
+                const treeContainer = document.getElementById('tree-container');
+                const textContainer = document.getElementById('text-container');
+                const btnCollapseAll = document.getElementById('btn-collapse-all');
 
                 let rootData = ${initialData};
                 let currentStatus = '${status}';
+                let tabSize = ${tabSize};
+                let sourceUri = '${sourceUri || ''}';
+                let sourceLine = ${sourceLine ?? -1};
+                
                 let focusedRowDetails = null;
+                let isCompact = false;
+                let isTreeView = true;
                 
                 // Search State
                 let searchMatches = [];
                 let currentMatchIndex = -1;
 
-                function render() {
-                    container.innerHTML = '';
-                    
-                    // Normalize data to array
+                function getItems() {
                     let items = [];
                     if (Array.isArray(rootData) && (rootData.length === 0 || rootData[0].data)) {
                         items = rootData;
                     } else if (rootData) {
                         items = [{ data: rootData, status: currentStatus }];
                     }
+                    return items;
+                }
 
-                    if (items.length === 0) {
-                         // No data
-                         return;
-                    }
+                function render() {
+                    treeContainer.innerHTML = '';
+                    
+                    const items = getItems();
+                    if (items.length === 0) return;
 
-                    // Unified Rendering: Always use stacked layout
+                    // Render Tree
                     items.forEach((item, index) => {
-                        renderMultiRootItem(container, item.data, item.status, index + 1);
+                        renderMultiRootItem(treeContainer, item.data, item.status, index + 1);
                     });
+                    
+                    // Render Text
+                    renderTextContainer();
+                }
+
+                function renderTextContainer() {
+                    textContainer.innerHTML = '';
+                    const items = getItems();
+                    if (items.length === 0) return;
+
+                    items.forEach((item, index) => {
+                         renderTextItem(textContainer, item.data, item.text, item.status, index + 1, item.raw);
+                    });
+                }
+
+                function renderTextItem(parent, data, text, status, index, rawData) {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.marginBottom = '30px';
+                    wrapper.dataset.originalText = text; 
+                    // Store raw JSON if valid, to allow re-beautifying
+                    wrapper.dataset.jsonData = (status === 'valid' && rawData) ? JSON.stringify(rawData) : ''; 
+                    
+                    const header = document.createElement('div');
+                    header.style.marginBottom = '4px';
+
+                    const badge = document.createElement('span');
+                    badge.className = 'status-badge ' + (status === 'valid' ? 'status-valid' : 'status-invalid');
+                    badge.textContent = status === 'valid' ? 'Valid JSON' : 'Invalid JSON';
+                    header.appendChild(badge);
+                    wrapper.appendChild(header);
+
+                    const pre = document.createElement('div');
+                    pre.className = 'text-block';
+                    
+                    if (status === 'valid' && rawData) {
+                         // Use rawData for correct structure
+                         if (isCompact) {
+                             pre.textContent = JSON.stringify(rawData);
+                             pre.classList.add('compact-wrap');
+                         } else {
+                             pre.textContent = JSON.stringify(rawData, null, tabSize);
+                         }
+                    } else {
+                         // Fallback to text (which is beautified string from service, or best effort)
+                         if (isCompact && data) {
+                             // Try to compact invalid JSON if parsed data exists (lenient parse)
+                             try {
+                                 pre.textContent = JSON.stringify(data);
+                                 pre.classList.add('compact-wrap');
+                             } catch (e) {
+                                 pre.textContent = text;
+                             }
+                         } else {
+                             pre.textContent = text;
+                         }
+                    }
+                    wrapper.appendChild(pre);
+
+                    parent.appendChild(wrapper);
                 }
 
                 function renderRootContent(container, data) {
                     if (data.type === 'object' && Array.isArray(data.children)) {
-                        // Render top-level properties directly
-                        for (const child of data.children) {
-                            renderNode(container, child.key, child.value, 0, false, child.isKeyError);
+                        if (data.children.length === 0) {
+                            const empty = document.createElement('div');
+                            empty.className = 'tree-row';
+                            empty.style.color = 'var(--vscode-descriptionForeground)'; // Muted color
+                            empty.style.fontStyle = 'italic';
+                            empty.textContent = '{}';
+                            container.appendChild(empty);
+                        } else {
+                            // Render top-level properties directly
+                            for (const child of data.children) {
+                                renderNode(container, child.key, child.value, 0, false, child.isKeyError);
+                            }
                         }
+                    } else if (data.type === 'array' && Array.isArray(data.items) && data.items.length === 0) {
+                         // Empty array root case (if handled here)
+                         const empty = document.createElement('div');
+                         empty.className = 'tree-row';
+                         empty.style.color = 'var(--vscode-descriptionForeground)';
+                         empty.style.fontStyle = 'italic';
+                         empty.textContent = '[]';
+                         container.appendChild(empty);
                     } else {
                          renderNode(container, 'Value', data, 0, false);
                     }
                 }
+
+                function toggleView() {
+                    if (isTreeView) {
+                        // Switching from Tree -> Text. User wants "Beautifier" explicitly.
+                        // Force isCompact = false.
+                        isCompact = false;
+                        renderTextContainer(); // Re-render text with new state
+                    }
+                    isTreeView = !isTreeView;
+                    updateView();
+                }
+
+                function updateView() {
+                     if (isTreeView) {
+                        treeContainer.style.display = 'block';
+                        textContainer.style.display = 'none';
+                        
+                        // Toolbar State: Tree View
+                        // Order: Collapse All, Beautifier, Go to Definition
+                        btnCollapseAll.style.display = 'inline-flex';
+                        btnCompact.style.display = 'none';
+                        
+                        btnToggleView.textContent = 'Beautifier';
+                        btnToggleView.style.display = 'inline-flex';
+                        
+                        btnReveal.textContent = 'Go to Definition';
+                        btnReveal.style.display = 'inline-flex'; 
+                        updateRecallButton(); // Will hide if no source
+
+                        document.querySelector('.bottom-toolbar').style.display = 'flex';
+                    } else {
+                        // Toolbar State: Text View
+                         // If switching to Text View, ensure label is correct. 
+                         // isCompact state is preserved.
+                         btnCompact.textContent = isCompact ? 'Beautifier' : 'Compact';
+                         btnCompact.style.display = 'inline-flex';
+                        
+                        treeContainer.style.display = 'none';
+                        textContainer.style.display = 'block';
+                        
+                        // Order: Compact (above), Preview, Go to Definition
+                        btnToggleView.textContent = 'Preview';
+                        
+                        btnCollapseAll.style.display = 'none';
+                        
+                        // Show Reveal (Go to Definition) in Text View as well
+                        if (sourceUri && sourceLine >= 0) {
+                             btnReveal.textContent = 'Go to Definition';
+                             btnReveal.style.display = 'inline-flex';
+                        } else {
+                             btnReveal.style.display = 'none';
+                        }
+
+                        document.querySelector('.bottom-toolbar').style.display = 'none';
+                    }
+                }
+                
+                function toggleCompact() {
+                    isCompact = !isCompact;
+                    renderTextContainer();
+                    
+                    if (isCompact) {
+                        btnCompact.textContent = 'Beautifier';
+                    } else {
+                        btnCompact.textContent = 'Compact';
+                    }
+                }
+
+                btnToggleView.addEventListener('click', toggleView);
+                btnCompact.addEventListener('click', toggleCompact);
 
                 function renderMultiRootItem(parent, data, status, index) {
                     const wrapper = document.createElement('div');
@@ -558,7 +830,10 @@ export class JsonTreeWebview {
                     // Ensure visibility only when navigating
                     ensureVisible(match);
 
-                    match.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    // Delay scroll to allow layout update (expansion)
+                    setTimeout(() => {
+                        match.scrollIntoView({ block: 'center', behavior: 'auto' });
+                    }, 50);
                     
                     const row = match.closest('.tree-row');
                     if (row) focusRow(row);
@@ -576,15 +851,15 @@ export class JsonTreeWebview {
 
                 function updateSearchUI() {
                     if (searchMatches.length === 0) {
-                         countLabel.textContent = '0';
+                         countLabel.textContent = '(0)';
                          btnPrev.disabled = true;
                          btnNext.disabled = true;
                     } else {
-                         // "Display matched count"
+                         // "Display matched count" in parentheses
                          if (currentMatchIndex === -1) {
-                             countLabel.textContent = \`\${searchMatches.length} matches\`;
+                             countLabel.textContent = \`(?/\${searchMatches.length})\`;
                          } else {
-                             countLabel.textContent = \`\${currentMatchIndex + 1} / \${searchMatches.length}\`;
+                             countLabel.textContent = \`(\${currentMatchIndex + 1}/\${searchMatches.length})\`;
                          }
                          btnPrev.disabled = false;
                          btnNext.disabled = false;
@@ -693,16 +968,51 @@ export class JsonTreeWebview {
 
                 document.getElementById('btn-collapse-all').addEventListener('click', collapseAll);
 
+                function updateRecallButton() {
+                    // Only applicable if in Tree View
+                    if (!isTreeView) return;
+
+                    if (sourceUri && sourceLine >= 0) {
+                        btnReveal.style.display = 'inline-flex';
+                    } else {
+                        btnReveal.style.display = 'none';
+                    }
+                }
+                
+                btnReveal.addEventListener('click', () => {
+                   if (sourceUri && sourceLine >= 0) {
+                       vscode.postMessage({ command: 'reveal', uri: sourceUri, line: sourceLine });
+                   } 
+                });
+
                 window.addEventListener('message', event => {
                     const message = event.data;
                     if (message.command === 'update') {
                         rootData = message.data;
                         if (message.status) currentStatus = message.status;
+                        if (message.tabSize) tabSize = message.tabSize;
+                        if (message.sourceUri) sourceUri = message.sourceUri;
+                        if (typeof message.sourceLine === 'number') sourceLine = message.sourceLine;
+                        
+                        // Reset search on update
+                        if (searchInput) {
+                            searchInput.value = '';
+                            performSearch(); // clear matches
+                        }
+                        
+                        // Always switch to Tree View on new content
+                        isTreeView = true;
+                        updateView();
+
                         render();
+                        updateRecallButton();
                     }
                 });
 
                 render();
+                updateRecallButton();
+                // Initial View State
+                updateView();
             </script>
         </body>
         </html>`;

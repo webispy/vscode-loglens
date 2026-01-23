@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { Logger } from './Logger';
 import { SourceMapService } from './SourceMapService';
 import { Constants } from '../constants';
+import { HighlightService } from './HighlightService';
 import { JsonTreeWebview } from '../views/JsonTreeWebview';
 import { LenientJsonParser } from './LenientJsonParser';
 
@@ -18,8 +19,55 @@ export class JsonPrettyService {
     constructor(
         private logger: Logger,
         private sourceMapService: SourceMapService,
-        private jsonTreeWebview: JsonTreeWebview
-    ) { }
+        private jsonTreeWebview: JsonTreeWebview,
+        private highlightService: HighlightService
+    ) {
+        this.jsonTreeWebview.onDidRevealLine(async event => {
+            try {
+                const targetUriStr = event.uri;
+                let targetViewColumn: vscode.ViewColumn | undefined;
+
+                // Search for the tab in all groups
+                const tabGroups = vscode.window.tabGroups.all;
+
+                for (const group of tabGroups) {
+                    // Check active tab first (optimization & user preference)
+                    if (group.activeTab && group.activeTab.input instanceof vscode.TabInputText) {
+                        if (group.activeTab.input.uri.toString() === targetUriStr) {
+                            targetViewColumn = group.viewColumn;
+                            break;
+                        }
+                    }
+
+                    // Check other tabs in the group
+                    const matchingTab = group.tabs.find(tab => {
+                        return tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === targetUriStr;
+                    });
+
+                    if (matchingTab) {
+                        targetViewColumn = group.viewColumn;
+                        break;
+                    }
+                }
+
+                if (targetViewColumn !== undefined) {
+                    // Document is open in a tab. Reveal it in that column.
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(targetUriStr));
+                    const editor = await vscode.window.showTextDocument(doc, {
+                        selection: new vscode.Range(event.line, 0, event.line, 0),
+                        preview: true,
+                        viewColumn: targetViewColumn
+                    });
+                    // Flash the line
+                    this.highlightService.flashLine(editor, event.line);
+                } else {
+                    vscode.window.showWarningMessage('LogMagnifier: Original file is closed or not available.');
+                }
+            } catch (e) {
+                this.logger.error('Failed to reveal line: ' + e);
+            }
+        });
+    }
 
     public async execute() {
         try {
@@ -73,12 +121,15 @@ export class JsonPrettyService {
                 if (json.type === 'valid') {
                     return {
                         data: LenientJsonParser.toParsedNode(json.parsed),
-                        status: 'valid' as const
+                        status: 'valid' as const,
+                        text: JSON.stringify(json.parsed, null, 2),
+                        raw: json.parsed // Pass raw object for correct re-stringification
                     };
                 } else {
                     return {
                         data: this.lenientParser.parse(json.text),
-                        status: 'invalid' as const
+                        status: 'invalid' as const,
+                        text: this.bestEffortFormat(json.text)
                     };
                 }
             });
@@ -86,7 +137,17 @@ export class JsonPrettyService {
             if (results.length > 0) {
                 // Pass array of results. We update the signature of show later.
                 // TypeScript might complain until we update the interface.
-                this.jsonTreeWebview.show(results, 'JSON Preview');
+                const options = editor.options;
+                const tabSize = typeof options.tabSize === 'number' ? options.tabSize : 2;
+
+                // Extract source info
+                const sourceUri = editor.document.uri.toString();
+                // If selection is single line, use that. 
+                // However, logProcessor extracted based on selection.active.line usually, or current line.
+                // Since this command uses active selection:
+                const sourceLine = selection.active.line;
+
+                this.jsonTreeWebview.show(results, 'JSON Preview', 'valid', tabSize, sourceUri, sourceLine);
             }
 
 
