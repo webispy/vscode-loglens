@@ -48,10 +48,13 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         vscode.commands.executeCommand(Constants.Commands.RemoveAllBookmarks);
                         break;
                     case 'back':
-                        (this._bookmarkService as any).back();
+                        this._bookmarkService.back();
                         break;
                     case 'forward':
-                        (this._bookmarkService as any).forward();
+                        this._bookmarkService.forward();
+                        break;
+                    case 'removeGroup':
+                        vscode.commands.executeCommand('logmagnifier.removeBookmarkGroup', data.groupId);
                         break;
                 }
             });
@@ -119,6 +122,31 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
 
     private getHtmlForWebview(webview: vscode.Webview) {
         const bookmarksMap = this._bookmarkService.getBookmarks();
+
+        // Calculate group unique tags
+        const groupMap = new Map<string, { keyword: string, count: number }>();
+        for (const items of bookmarksMap.values()) {
+            for (const item of items) {
+                if (item.groupId) {
+                    const existing = groupMap.get(item.groupId);
+                    if (existing) {
+                        existing.count++;
+                    } else {
+                        groupMap.set(item.groupId, {
+                            keyword: item.matchText || 'Manual',
+                            count: 1
+                        });
+                    }
+                }
+            }
+        }
+
+        const tagsHtml = Array.from(groupMap.entries()).map(([groupId, data]) => `
+            <span class="tag" title="${data.keyword} (${data.count} lines)">
+                <span class="tag-label">${data.keyword}</span>
+                <span class="tag-remove" onclick="removeGroup('${groupId}', event)">×</span>
+            </span>
+        `).join('');
 
         const itemsMap: Record<string, any> = {};
         let filesHtml = '';
@@ -216,11 +244,47 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         padding: 2px 4px;
                         background-color: var(--vscode-sideBar-background);
                         border-bottom: 1px solid var(--vscode-panel-border);
-                        gap: 2px;
+                        gap: 3px;
                         position: sticky;
                         top: 0;
                         z-index: 100;
                         align-items: center;
+                    }
+                    .tag-scroll-view {
+                        display: flex;
+                        gap: 4px;
+                        overflow-x: auto;
+                        flex: 1;
+                        padding: 2px 4px;
+                        scrollbar-width: none; /* Firefox */
+                        -ms-overflow-style: none;  /* IE and Edge */
+                    }
+                    .tag-scroll-view::-webkit-scrollbar {
+                        display: none; /* Hide scrollbar for Chrome, Safari and Opera */
+                    }
+                    .tag {
+                        display: inline-flex;
+                        align-items: center;
+                        background-color: var(--vscode-badge-background);
+                        color: var(--vscode-badge-foreground);
+                        padding: 1px 6px;
+                        border-radius: 10px;
+                        font-size: 10px;
+                        white-space: nowrap;
+                    }
+                    .tag-label {
+                        max-width: 80px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+                    .tag-remove {
+                        margin-left: 4px;
+                        cursor: pointer;
+                        opacity: 0.7;
+                        font-weight: bold;
+                    }
+                    .tag-remove:hover {
+                        opacity: 1;
                     }
                     .stats-label {
                         font-size: 10px;
@@ -362,7 +426,11 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         <svg viewBox="0 0 16 16"><path fill="currentColor" d="M4.646 1.646l6 6-6 6-.708-.708 5.292-5.292-5.289-5.292z"/></svg>
                     </button>
                     <div class="stats-label">Ln ${lineCount}, Gr ${groupCount}</div>
-                    <div style="flex: 1"></div>
+                    
+                    <div class="tag-scroll-view">
+                        ${tagsHtml}
+                    </div>
+                    
                     <button class="action-btn" onclick="copyAll()" title="Copy All Bookmarks" ${lineCount > 0 ? '' : 'disabled'}>
                         <svg viewBox="0 0 16 16"><path fill="currentColor" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
                     </button>
@@ -422,6 +490,10 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                     }
                     function clearAll() {
                          vscode.postMessage({ type: 'clearAll' });
+                    }
+                    function removeGroup(groupId, event) {
+                         if (event) event.stopPropagation();
+                         vscode.postMessage({ type: 'removeGroup', groupId: groupId });
                     }
                 </script>
             </body>
