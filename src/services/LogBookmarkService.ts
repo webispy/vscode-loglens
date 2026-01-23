@@ -167,8 +167,30 @@ export class LogBookmarkService implements vscode.Disposable {
     }
 
     public removeAllBookmarks() {
-        if (this._historyIndex >= 0 && this._history[this._historyIndex].length > 0) {
-            this.pushToHistory([]);
+        this._bookmarks.clear();
+        this._history = [];
+        this._historyIndex = -1;
+        this._onDidChangeBookmarks.fire();
+        this.refreshAllDecorations();
+        this.saveToState();
+    }
+
+    public removeBookmarkGroup(groupId: string) {
+        const currentActiveIds = this.getActiveIds();
+        const bookmarksMap = this.getBookmarks();
+        let changed = false;
+
+        for (const items of bookmarksMap.values()) {
+            for (const item of items) {
+                if (item.groupId === groupId && currentActiveIds.has(item.id)) {
+                    currentActiveIds.delete(item.id);
+                    changed = true;
+                }
+            }
+        }
+
+        if (changed) {
+            this.pushToHistory(Array.from(currentActiveIds));
             this._onDidChangeBookmarks.fire();
             this.refreshAllDecorations();
             this.saveToState();
