@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { LogBookmarkService } from '../services/LogBookmarkService';
 import { BookmarkItem } from '../models/Bookmark';
+import { Constants } from '../constants';
 
 export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
@@ -37,23 +38,20 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                     case 'remove':
                         this.removeBookmark(data.item);
                         break;
-                    case 'removeFile':
-                        this.removeBookmarkFile(data.uri);
+                    case 'copyAll':
+                        vscode.commands.executeCommand(Constants.Commands.CopyAllBookmarks);
                         break;
-                    case 'copyFile':
-                        this.copyBookmarkFile(data.uri, data.withLineNumber);
+                    case 'openAll':
+                        vscode.commands.executeCommand(Constants.Commands.OpenAllBookmarks);
                         break;
-                    case 'openFile':
-                        this.openBookmarkFile(data.uri, data.withLineNumber);
+                    case 'clearAll':
+                        vscode.commands.executeCommand(Constants.Commands.RemoveAllBookmarks);
                         break;
                     case 'back':
                         (this._bookmarkService as any).back();
                         break;
                     case 'forward':
                         (this._bookmarkService as any).forward();
-                        break;
-                    case 'removeAll':
-                        // This could be a new command or handled here
                         break;
                 }
             });
@@ -180,17 +178,6 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                 <div class="file-section">
                     <div class="file-header">
                         <span class="file-name">${filename}</span>
-                        <div class="file-actions">
-                            <span class="action-btn" onclick="copyFile('${uriStr}')" title="Copy">
-                                <svg viewBox="0 0 16 16"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
-                            </span>
-                            <span class="action-btn" onclick="openFile('${uriStr}')" title="Open in Tab">
-                                <svg viewBox="0 0 16 16"><path d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L11.774 2.774 6.28 8.268a.75.75 0 0 1-1.06-1.06l5.494-5.494-2.796-2.796A.25.25 0 0 1 8.094 1Z"/></svg>
-                            </span>
-                            <span class="action-btn" onclick="removeFile('${uriStr}')" title="Delete File Bookmarks">
-                                <svg viewBox="0 0 16 16"><path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.75 1.75 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"/></svg>
-                            </span>
-                        </div>
                     </div>
                     <div class="file-lines">${fileLines}</div>
                 </div>`;
@@ -226,10 +213,10 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                     }
                     .toolbar {
                         display: flex;
-                        padding: 4px;
+                        padding: 2px 4px;
                         background-color: var(--vscode-sideBar-background);
                         border-bottom: 1px solid var(--vscode-panel-border);
-                        gap: 4px;
+                        gap: 2px;
                         position: sticky;
                         top: 0;
                         z-index: 100;
@@ -266,6 +253,28 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         width: 16px;
                         height: 16px;
                     }
+                    .nav-btn:hover:not(:disabled), .action-btn:hover:not(:disabled) {
+                        background-color: var(--vscode-toolbar-hoverBackground);
+                    }
+                    .nav-btn:disabled, .action-btn:disabled {
+                        opacity: 0.3;
+                        cursor: default;
+                    }
+                    .action-btn {
+                        background: none;
+                        border: none;
+                        color: var(--vscode-icon-foreground);
+                        cursor: pointer;
+                        padding: 3px;
+                        margin: 0 1px;
+                        border-radius: 3px;
+                        display: flex;
+                        align-items: center;
+                    }
+                    .action-btn svg {
+                        width: 12px;
+                        height: 12px;
+                    }
                     .bookmark-group {
                         margin-bottom: 8px;
                         border-bottom: 1px solid var(--vscode-panel-border);
@@ -298,18 +307,7 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         display: flex;
                         gap: 4px;
                     }
-                    .action-btn {
-                        cursor: pointer;
-                        opacity: 0.6;
-                    }
-                    .action-btn:hover {
-                        opacity: 1;
-                    }
-                    .action-btn svg {
-                        width: 12px;
-                        height: 12px;
-                        fill: currentColor;
-                    }
+
                     .log-line {
                         display: flex;
                         white-space: pre;
@@ -365,7 +363,15 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                     </button>
                     <div class="stats-label">Ln ${lineCount}, Gr ${groupCount}</div>
                     <div style="flex: 1"></div>
-                    <!-- Clear All button could go here -->
+                    <button class="action-btn" onclick="copyAll()" title="Copy All Bookmarks" ${lineCount > 0 ? '' : 'disabled'}>
+                        <svg viewBox="0 0 16 16"><path fill="currentColor" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
+                    </button>
+                    <button class="action-btn" onclick="openAll()" title="Open All in Tab" ${lineCount > 0 ? '' : 'disabled'}>
+                        <svg viewBox="0 0 16 16"><path fill="currentColor" d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L11.774 2.774 6.28 8.268a.75.75 0 0 1-1.06-1.06l5.494-5.494-2.796-2.796A.25.25 0 0 1 8.094 1Z"/></svg>
+                    </button>
+                    <button class="action-btn" onclick="clearAll()" title="Clear All Bookmarks" ${lineCount > 0 ? '' : 'disabled'}>
+                        <svg viewBox="0 0 16 16"><path fill="currentColor" d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.75 1.75 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"/></svg>
+                    </button>
                 </div>
                 <div class="content">
                     ${finalHtml}
@@ -408,14 +414,14 @@ export class LogBookmarkWebviewProvider implements vscode.WebviewViewProvider {
                     function forward() {
                          vscode.postMessage({ type: 'forward' });
                     }
-                    function copyFile(uri) {
-                         vscode.postMessage({ type: 'copyFile', uri: uri, withLineNumber: true });
+                    function copyAll() {
+                         vscode.postMessage({ type: 'copyAll' });
                     }
-                    function openFile(uri) {
-                         vscode.postMessage({ type: 'openFile', uri: uri, withLineNumber: true });
+                    function openAll() {
+                         vscode.postMessage({ type: 'openAll' });
                     }
-                    function removeFile(uri) {
-                         vscode.postMessage({ type: 'removeFile', uri: uri });
+                    function clearAll() {
+                         vscode.postMessage({ type: 'clearAll' });
                     }
                 </script>
             </body>

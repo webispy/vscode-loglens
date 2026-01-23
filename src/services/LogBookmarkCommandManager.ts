@@ -21,9 +21,56 @@ export class LogBookmarkCommandManager {
         context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.JumpToBookmark, (item: BookmarkItem) => this.jumpToBookmark(item)));
         context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.AddMatchListToBookmark, (filter: FilterItem) => this.addMatchListToBookmark(filter)));
         context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.AddSelectionMatchesToBookmark, () => this.addSelectionMatchesToBookmark()));
-        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RemoveBookmarkFile, (uri: vscode.Uri) => this.removeBookmarkFile(uri)));
-        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.CopyBookmarkFile, (uri: vscode.Uri, withLineNumber: boolean) => this.copyBookmarkFile(uri, withLineNumber)));
-        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.OpenBookmarkFile, (uri: vscode.Uri, withLineNumber: boolean) => this.openBookmarkFile(uri, withLineNumber)));
+        context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.removeBookmarkFile', (uri: vscode.Uri) => this.removeBookmarkFile(uri)));
+        context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.copyBookmarkFile', (uri: vscode.Uri, withLineNumber: boolean) => this.copyBookmarkFile(uri, withLineNumber)));
+        context.subscriptions.push(vscode.commands.registerCommand('logmagnifier.openBookmarkFile', (uri: vscode.Uri, withLineNumber: boolean) => this.openBookmarkFile(uri, withLineNumber)));
+
+        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.CopyAllBookmarks, () => this.copyAllBookmarks()));
+        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.OpenAllBookmarks, () => this.openAllBookmarks()));
+        context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.RemoveAllBookmarks, () => this.removeAllBookmarks()));
+    }
+
+    private copyAllBookmarks() {
+        const bookmarksMap = this.bookmarkService.getBookmarks();
+        if (bookmarksMap.size === 0) { return; }
+
+        const allLines: string[] = [];
+        const sortedUris = Array.from(bookmarksMap.keys()).sort();
+        for (const uri of sortedUris) {
+            const items = bookmarksMap.get(uri)!;
+            items.forEach(b => allLines.push(`Line ${b.line + 1}: ${b.content}`));
+        }
+
+        vscode.env.clipboard.writeText(allLines.join('\n'));
+        vscode.window.showInformationMessage('All bookmarks copied to clipboard.');
+    }
+
+    private async openAllBookmarks() {
+        const bookmarksMap = this.bookmarkService.getBookmarks();
+        if (bookmarksMap.size === 0) { return; }
+
+        const allLines: string[] = [];
+        const sortedUris = Array.from(bookmarksMap.keys()).sort();
+        for (const uri of sortedUris) {
+            const items = bookmarksMap.get(uri)!;
+            items.forEach(b => allLines.push(`Line ${b.line + 1}: ${b.content}`));
+        }
+
+        const untitledUri = vscode.Uri.parse(`untitled:All Bookmarks`);
+        try {
+            const doc = await vscode.workspace.openTextDocument(untitledUri);
+            const editor = await vscode.window.showTextDocument(doc);
+            await editor.edit(editBuilder => {
+                const fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length));
+                editBuilder.replace(fullRange, allLines.join('\n'));
+            });
+        } catch (e) {
+            vscode.window.showErrorMessage(`Failed to open all bookmarks: ${e}`);
+        }
+    }
+
+    private removeAllBookmarks() {
+        this.bookmarkService.removeAllBookmarks();
     }
 
     private addBookmark() {

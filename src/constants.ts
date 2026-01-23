@@ -144,6 +144,9 @@ export const Constants = {
         RemoveBookmark: 'logmagnifier.removeBookmark',
         JumpToBookmark: 'logmagnifier.jumpToBookmark',
         JumpToSource: 'logmagnifier.jumpToSource',
+        CopyAllBookmarks: 'logmagnifier.copyAllBookmarks',
+        OpenAllBookmarks: 'logmagnifier.openAllBookmarks',
+        RemoveAllBookmarks: 'logmagnifier.removeAllBookmarks',
 
         // Other shortcuts / Context menu
         CopyGroupEnabledItems: 'logmagnifier.copyGroupEnabledItems',

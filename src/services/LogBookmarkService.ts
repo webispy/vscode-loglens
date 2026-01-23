@@ -166,6 +166,15 @@ export class LogBookmarkService implements vscode.Disposable {
         }
     }
 
+    public removeAllBookmarks() {
+        if (this._historyIndex >= 0 && this._history[this._historyIndex].length > 0) {
+            this.pushToHistory([]);
+            this._onDidChangeBookmarks.fire();
+            this.refreshAllDecorations();
+            this.saveToState();
+        }
+    }
+
     private getActiveIds(): Set<string> {
         if (this._historyIndex >= 0 && this._historyIndex < this._history.length) {
             return new Set(this._history[this._historyIndex]);
