@@ -79,7 +79,9 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.languages.registerDefinitionProvider(
 			[
 				{ scheme: Constants.Schemes.File, language: 'log' },
-				{ scheme: Constants.Schemes.Untitled, language: 'log' }
+				{ scheme: Constants.Schemes.Untitled, language: 'log' },
+				{ scheme: Constants.Schemes.Untitled, language: 'jsonc' },
+				{ scheme: Constants.Schemes.Untitled, language: 'json' }
 			],
 			new FilteredLogDefinitionProvider(sourceMapService)
 		)
