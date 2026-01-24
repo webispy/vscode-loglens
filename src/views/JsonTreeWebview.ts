@@ -8,7 +8,7 @@ export class JsonTreeWebview {
 
     constructor(private readonly extensionUri: vscode.Uri) { }
 
-    public show(data: any, title: string = 'JSON Preview', status: 'valid' | 'invalid' = 'valid', tabSize: number = 2, sourceUri?: string, sourceLine?: number) {
+    public show(data: any, title: string = 'JSON Preview', status: 'valid' | 'invalid' | 'no-json' = 'valid', tabSize: number = 2, sourceUri?: string, sourceLine?: number) {
         if (this.panel) {
             this.panel.reveal(vscode.ViewColumn.Beside);
             this.panel.webview.postMessage({ command: 'update', data, status, tabSize, sourceUri, sourceLine });
@@ -49,7 +49,7 @@ export class JsonTreeWebview {
         return !!this.panel;
     }
 
-    private getHtmlForWebview(data: any, status: 'valid' | 'invalid', tabSize: number = 2, sourceUri?: string, sourceLine?: number): string {
+    private getHtmlForWebview(data: any, status: 'valid' | 'invalid' | 'no-json', tabSize: number = 2, sourceUri?: string, sourceLine?: number): string {
         const initialData = JSON.stringify(data);
 
         return `<!DOCTYPE html>
@@ -451,7 +451,7 @@ export class JsonTreeWebview {
 
                     const badge = document.createElement('span');
                     badge.className = 'status-badge ' + (status === 'valid' ? 'status-valid' : 'status-invalid');
-                    badge.textContent = status === 'valid' ? 'Valid JSON' : 'Invalid JSON';
+                    badge.textContent = status === 'valid' ? 'Valid JSON' : (status === 'no-json' ? 'No JSON' : 'Invalid JSON');
                     header.appendChild(badge);
                     wrapper.appendChild(header);
 
@@ -596,18 +596,20 @@ export class JsonTreeWebview {
                     // Status Badge for this item (No index, no arrow)
                     const badge = document.createElement('span');
                     badge.className = 'status-badge ' + (status === 'valid' ? 'status-valid' : 'status-invalid');
-                    badge.textContent = status === 'valid' ? 'Valid JSON' : 'Invalid JSON';
+                    badge.textContent = status === 'valid' ? 'Valid JSON' : (status === 'no-json' ? 'No JSON' : 'Invalid JSON');
                     badge.style.marginRight = '0'; // Reset margin
                     header.appendChild(badge);
                     
                     wrapper.appendChild(header);
                     
-                    const content = document.createElement('div');
-                    content.className = 'children';
-                    content.style.display = 'block'; 
-                    
-                    renderRootContent(content, data);
-                    wrapper.appendChild(content);
+                    if (status !== 'no-json') {
+                        const content = document.createElement('div');
+                        content.className = 'children';
+                        content.style.display = 'block'; 
+                        
+                        renderRootContent(content, data);
+                        wrapper.appendChild(content);
+                    }
                     
                     parent.appendChild(wrapper);
                 }

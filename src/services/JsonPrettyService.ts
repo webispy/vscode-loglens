@@ -93,25 +93,24 @@ export class JsonPrettyService {
             const jsons = this.extractJsons(text);
             if (jsons.length === 0) {
                 vscode.window.showInformationMessage(Constants.Messages.Info.NoJsonFound);
+
+                // Clear the webview to reflect the current state (avoid showing stale data)
+                const sourceUri = editor.document.uri.toString();
+                const sourceLine = selection.active.line;
+                const tabSize = typeof editor.options.tabSize === 'number' ? editor.options.tabSize : 2;
+
+                this.jsonTreeWebview.show(
+                    [{ status: 'no-json', data: {}, text: '' }],
+                    'JSON Preview',
+                    'no-json',
+                    tabSize,
+                    sourceUri,
+                    sourceLine
+                );
                 return;
             }
 
-            const formattedContent = this.formatOutput(text, jsons);
-            const doc = await vscode.workspace.openTextDocument({
-                content: formattedContent,
-                language: 'jsonc'
-            });
-            await vscode.window.showTextDocument(doc);
 
-            // Register Source Mapping for navigation
-            const lineCount = doc.lineCount;
-            const sourceLine = selection.active.line;
-            const lineMapping = new Array(lineCount).fill(sourceLine);
-
-            // We need to use the uri of the newly created document. 
-            // Note: Untitled documents have a specific URI scheme.
-            this.sourceMapService.register(doc.uri, editor.document.uri, lineMapping);
-            this.sourceMapService.updateContextKey(vscode.window.activeTextEditor);
 
             // Update Tree View (Webview)
             // Prioritize valid JSONs, but fallback to lenient parsing for invalid ones
