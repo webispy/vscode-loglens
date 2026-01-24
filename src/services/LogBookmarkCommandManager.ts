@@ -82,6 +82,8 @@ export class LogBookmarkCommandManager {
 
     private toggleBookmarkWordWrap() {
         this.bookmarkService.toggleWordWrap();
+        const enabled = this.bookmarkService.isWordWrapEnabled();
+        vscode.window.setStatusBarMessage(`Bookmark Word Wrap: ${enabled ? 'Enabled' : 'Disabled'}`, 3000);
     }
 
     private addBookmark() {
