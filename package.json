@@ -449,9 +449,14 @@
         "when": "editorTextFocus"
       },
       {
+        "command": "logmagnifier.toggleWordWrap",
+        "key": "ctrl+cmd+w",
+        "when": "editorTextFocus"
+      },
+      {
         "command": "logmagnifier.bookmark.toggleWordWrap",
         "key": "ctrl+cmd+w",
-        "when": "editorTextFocus || focusedView == logmagnifier-bookmark"
+        "when": "focusedView == logmagnifier-bookmark"
       }
     ],
     "commands": [
