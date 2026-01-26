@@ -29,6 +29,7 @@ export class CommandManager {
         private sourceMapService: SourceMapService
     ) {
         this.registerCommands();
+        this.registerEventListeners();
         // Initialize context key
         this.setPrependLineNumbersEnabled(false);
     }
@@ -38,6 +39,36 @@ export class CommandManager {
     private setPrependLineNumbersEnabled(value: boolean) {
         this._prependLineNumbersEnabled = value;
         vscode.commands.executeCommand('setContext', Constants.ContextKeys.PrependLineNumbersEnabled, value);
+    }
+
+    private lastActiveLine: number = -1;
+    private lastUriStr: string = '';
+
+    private registerEventListeners() {
+        this.context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection(event => {
+            const editor = event.textEditor;
+            // Only trigger if it is the active editor
+            if (editor !== vscode.window.activeTextEditor) {
+                return;
+            }
+
+            const config = vscode.workspace.getConfiguration(Constants.Configuration.Section);
+            const enabled = config.get<boolean>(Constants.Configuration.JsonPreviewEnabled);
+
+            if (!enabled) {
+                return;
+            }
+
+            const currentLine = event.selections[0].active.line;
+            const currentUriStr = editor.document.uri.toString();
+
+            if (currentLine !== this.lastActiveLine || currentUriStr !== this.lastUriStr) {
+                this.lastActiveLine = currentLine;
+                this.lastUriStr = currentUriStr;
+                // Execute silent
+                this.jsonPrettyService.execute(true);
+            }
+        }));
     }
 
     private registerCommands() {
@@ -619,6 +650,19 @@ export class CommandManager {
 
 
 
+
+
+        this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.ToggleJsonPreview, async () => {
+            const config = vscode.workspace.getConfiguration(Constants.Configuration.Section);
+            const current = config.get<boolean>(Constants.Configuration.JsonPreviewEnabled);
+            const newValue = !current;
+            await config.update(Constants.Configuration.JsonPreviewEnabled, newValue, vscode.ConfigurationTarget.Global);
+            this.quickAccessProvider.refresh();
+
+            if (newValue) {
+                this.jsonPrettyService.execute(true);
+            }
+        }));
 
 
         this.context.subscriptions.push(vscode.commands.registerCommand(Constants.Commands.CreateFilter, (item: any) => {

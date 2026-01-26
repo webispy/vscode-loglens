@@ -69,7 +69,7 @@ export class JsonPrettyService {
         });
     }
 
-    public async execute() {
+    public async execute(silent: boolean = false) {
         try {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
@@ -86,13 +86,29 @@ export class JsonPrettyService {
             }
 
             if (!text || text.trim().length === 0) {
-                vscode.window.showInformationMessage(Constants.Messages.Info.NoTextToProcess);
+                if (!silent) {
+                    vscode.window.showInformationMessage(Constants.Messages.Info.NoTextToProcess);
+                }
+                // If silent (auto-update), we might still want to clear the view if it was open
+                if (silent) {
+                    this.jsonTreeWebview.show(
+                        [{ status: 'no-json', data: {}, text: '' }],
+                        'JSON Preview',
+                        'no-json',
+                        2,
+                        editor.document.uri.toString(),
+                        selection.active.line,
+                        true
+                    );
+                }
                 return;
             }
 
             const jsons = this.extractJsons(text);
             if (jsons.length === 0) {
-                vscode.window.showInformationMessage(Constants.Messages.Info.NoJsonFound);
+                if (!silent) {
+                    vscode.window.showInformationMessage(Constants.Messages.Info.NoJsonFound);
+                }
 
                 // Clear the webview to reflect the current state (avoid showing stale data)
                 const sourceUri = editor.document.uri.toString();
@@ -105,7 +121,8 @@ export class JsonPrettyService {
                     'no-json',
                     tabSize,
                     sourceUri,
-                    sourceLine
+                    sourceLine,
+                    silent
                 );
                 return;
             }
@@ -146,14 +163,16 @@ export class JsonPrettyService {
                 // Since this command uses active selection:
                 const sourceLine = selection.active.line;
 
-                this.jsonTreeWebview.show(results, 'JSON Preview', 'valid', tabSize, sourceUri, sourceLine);
+                this.jsonTreeWebview.show(results, 'JSON Preview', 'valid', tabSize, sourceUri, sourceLine, silent);
             }
 
 
 
         } catch (error) {
             this.logger.error(`JsonPrettyService error: ${error}`);
-            vscode.window.showErrorMessage(Constants.Messages.Error.JsonProcessError);
+            if (!silent) {
+                vscode.window.showErrorMessage(Constants.Messages.Error.JsonProcessError);
+            }
         }
     }
 

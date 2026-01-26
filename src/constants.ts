@@ -103,7 +103,7 @@ export const Constants = {
         ToggleWordWrap: 'logmagnifier.toggleWordWrap',
         ToggleMinimap: 'logmagnifier.toggleMinimap',
         ToggleStickyScroll: 'logmagnifier.toggleStickyScroll',
-
+        ToggleJsonPreview: 'logmagnifier.toggleJsonPreview',
         ToggleOccurrencesHighlight: 'logmagnifier.toggleOccurrencesHighlight',
         ToggleFileSizeUnit: 'logmagnifier.toggleFileSizeUnit',
 
@@ -192,6 +192,7 @@ export const Constants = {
     Configuration: {
         Section: 'logmagnifier',
         TempFilePrefix: 'tempFilePrefix', // relative to section
+        JsonPreviewEnabled: 'jsonPreviewEnabled',
         StatusBarTimeout: 'statusBarTimeout',
         HighlightColors: {
             Section: 'logmagnifier.highlightColors',
@@ -277,7 +278,7 @@ export const Constants = {
         WordWrap: 'Word Wrap',
         Minimap: 'Minimap',
         StickyScroll: 'Sticky Scroll',
-
+        JsonPreview: 'Auto JSON Preview',
         OccurrencesHighlight: 'Occurrences Highlight',
         FileSize: 'File Size',
         Bytes: 'Bytes',
