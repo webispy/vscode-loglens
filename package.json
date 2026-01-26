@@ -310,6 +310,11 @@
             "default": false,
             "description": "Enable highlighting for Regex filters in the editor."
           },
+          "logmagnifier.jsonPreviewEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable automatic JSON preview update when active line changes."
+          },
           "logmagnifier.regex.highlightColor": {
             "anyOf": [
               {
@@ -691,6 +696,11 @@
         "command": "logmagnifier.toggleOccurrencesHighlight",
         "title": "Set Occurrences Highlight",
         "icon": "$(search)"
+      },
+      {
+        "command": "logmagnifier.toggleJsonPreview",
+        "title": "Toggle Auto JSON Preview",
+        "icon": "$(json)"
       },
       {
         "command": "logmagnifier.exportWordFilters",

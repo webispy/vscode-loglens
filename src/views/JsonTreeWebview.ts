@@ -8,15 +8,15 @@ export class JsonTreeWebview {
 
     constructor(private readonly extensionUri: vscode.Uri) { }
 
-    public show(data: any, title: string = 'JSON Preview', status: 'valid' | 'invalid' | 'no-json' = 'valid', tabSize: number = 2, sourceUri?: string, sourceLine?: number) {
+    public show(data: any, title: string = 'JSON Preview', status: 'valid' | 'invalid' | 'no-json' = 'valid', tabSize: number = 2, sourceUri?: string, sourceLine?: number, preserveFocus: boolean = false) {
         if (this.panel) {
-            this.panel.reveal(vscode.ViewColumn.Beside);
+            this.panel.reveal(vscode.ViewColumn.Beside, preserveFocus);
             this.panel.webview.postMessage({ command: 'update', data, status, tabSize, sourceUri, sourceLine });
         } else {
             this.panel = vscode.window.createWebviewPanel(
                 'logmagnifier-json-tree',
                 title,
-                vscode.ViewColumn.Beside,
+                { viewColumn: vscode.ViewColumn.Beside, preserveFocus: preserveFocus },
                 {
                     enableScripts: true,
                     localResourceRoots: [this.extensionUri]
