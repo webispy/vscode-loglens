@@ -33,7 +33,7 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
   - **Add/Remove**: Toggle bookmarks via context menu.
   - **Navigate**: Jump to bookmarks instantly from the "LogMagnifier" view in the Panel.
   - **Persistence**: Bookmarks are saved and restored across sessions.
-- **JSON Pretty Print**: Extract and format JSON objects from log lines (Ctrl+Cmd+J).
+- **Interactive JSON Preview**: Extract and explore JSON objects from log lines in a dedicated, searchable tree view (Ctrl+Cmd+J).
 
 ## Usage
 

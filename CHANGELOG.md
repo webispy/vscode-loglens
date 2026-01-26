@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.5.2]
+
+### Changed
+- **JSON Preview**: Replaced text-based pretty print with an interactive Webview (Tree/Text modes, search).
+- **Navigation**: Removed duplicate highlight navigation toggle from UI (now controlled via settings).
+
+### Fixed
+- **Navigation**: Fixed "Jump to source" functionality from the JSON preview view.
+
 ## [1.5.1]
 
 ### Refactor
