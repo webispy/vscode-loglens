@@ -2,6 +2,9 @@ import * as vscode from 'vscode';
 import { Logger } from './Logger';
 import { SourceMapService } from './SourceMapService';
 import { Constants } from '../constants';
+import { HighlightService } from './HighlightService';
+import { JsonTreeWebview } from '../views/JsonTreeWebview';
+import { LenientJsonParser } from './LenientJsonParser';
 
 interface ExtractedJson {
     type: 'valid' | 'invalid' | 'incomplete';
@@ -11,7 +14,60 @@ interface ExtractedJson {
 }
 
 export class JsonPrettyService {
-    constructor(private logger: Logger, private sourceMapService: SourceMapService) { }
+    private lenientParser = new LenientJsonParser();
+
+    constructor(
+        private logger: Logger,
+        private sourceMapService: SourceMapService,
+        private jsonTreeWebview: JsonTreeWebview,
+        private highlightService: HighlightService
+    ) {
+        this.jsonTreeWebview.onDidRevealLine(async event => {
+            try {
+                const targetUriStr = event.uri;
+                let targetViewColumn: vscode.ViewColumn | undefined;
+
+                // Search for the tab in all groups
+                const tabGroups = vscode.window.tabGroups.all;
+
+                for (const group of tabGroups) {
+                    // Check active tab first (optimization & user preference)
+                    if (group.activeTab && group.activeTab.input instanceof vscode.TabInputText) {
+                        if (group.activeTab.input.uri.toString() === targetUriStr) {
+                            targetViewColumn = group.viewColumn;
+                            break;
+                        }
+                    }
+
+                    // Check other tabs in the group
+                    const matchingTab = group.tabs.find(tab => {
+                        return tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === targetUriStr;
+                    });
+
+                    if (matchingTab) {
+                        targetViewColumn = group.viewColumn;
+                        break;
+                    }
+                }
+
+                if (targetViewColumn !== undefined) {
+                    // Document is open in a tab. Reveal it in that column.
+                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse(targetUriStr));
+                    const editor = await vscode.window.showTextDocument(doc, {
+                        selection: new vscode.Range(event.line, 0, event.line, 0),
+                        preview: true,
+                        viewColumn: targetViewColumn
+                    });
+                    // Flash the line
+                    this.highlightService.flashLine(editor, event.line);
+                } else {
+                    vscode.window.showWarningMessage('LogMagnifier: Original file is closed or not available.');
+                }
+            } catch (e) {
+                this.logger.error('Failed to reveal line: ' + e);
+            }
+        });
+    }
 
     public async execute() {
         try {
@@ -37,27 +93,63 @@ export class JsonPrettyService {
             const jsons = this.extractJsons(text);
             if (jsons.length === 0) {
                 vscode.window.showInformationMessage(Constants.Messages.Info.NoJsonFound);
+
+                // Clear the webview to reflect the current state (avoid showing stale data)
+                const sourceUri = editor.document.uri.toString();
+                const sourceLine = selection.active.line;
+                const tabSize = typeof editor.options.tabSize === 'number' ? editor.options.tabSize : 2;
+
+                this.jsonTreeWebview.show(
+                    [{ status: 'no-json', data: {}, text: '' }],
+                    'JSON Preview',
+                    'no-json',
+                    tabSize,
+                    sourceUri,
+                    sourceLine
+                );
                 return;
             }
 
-            const formattedContent = this.formatOutput(text, jsons);
-            const doc = await vscode.workspace.openTextDocument({
-                content: formattedContent,
-                language: 'jsonc'
+
+
+            // Update Tree View (Webview)
+            // Prioritize valid JSONs, but fallback to lenient parsing for invalid ones
+            // JSON Webview is now always enabled for this command
+            // Process all extracted JSONs for the Webview
+            const results = jsons.map(json => {
+                if (json.type === 'valid') {
+                    return {
+                        data: LenientJsonParser.toParsedNode(json.parsed),
+                        status: 'valid' as const,
+                        text: JSON.stringify(json.parsed, null, 2),
+                        raw: json.parsed // Pass raw object for correct re-stringification
+                    };
+                } else {
+                    return {
+                        data: this.lenientParser.parse(json.text),
+                        status: 'invalid' as const,
+                        text: this.bestEffortFormat(json.text)
+                    };
+                }
             });
-            await vscode.window.showTextDocument(doc);
 
-            // Register Source Mapping for navigation
-            const lineCount = doc.lineCount;
-            const sourceLine = selection.active.line;
-            const lineMapping = new Array(lineCount).fill(sourceLine);
+            if (results.length > 0) {
+                // Pass array of results. We update the signature of show later.
+                // TypeScript might complain until we update the interface.
+                const options = editor.options;
+                const tabSize = typeof options.tabSize === 'number' ? options.tabSize : 2;
 
-            // We need to use the uri of the newly created document. 
-            // Note: Untitled documents have a specific URI scheme.
-            this.sourceMapService.register(doc.uri, editor.document.uri, lineMapping);
-            this.sourceMapService.updateContextKey(vscode.window.activeTextEditor);
+                // Extract source info
+                const sourceUri = editor.document.uri.toString();
+                // If selection is single line, use that. 
+                // However, logProcessor extracted based on selection.active.line usually, or current line.
+                // Since this command uses active selection:
+                const sourceLine = selection.active.line;
 
-            this.logger.info(`JsonPrettyService: Processed ${jsons.length} objects.`);
+                this.jsonTreeWebview.show(results, 'JSON Preview', 'valid', tabSize, sourceUri, sourceLine);
+            }
+
+
 
         } catch (error) {
             this.logger.error(`JsonPrettyService error: ${error}`);
