@@ -44,6 +44,22 @@
       {
         "title": "Highlight Colors",
         "properties": {
+          "logmagnifier.highlightColors.color00": {
+            "type": "object",
+            "properties": {
+              "dark": {
+                "type": "string"
+              },
+              "light": {
+                "type": "string"
+              }
+            },
+            "default": {
+              "dark": "rgba(0, 0, 0, 0)",
+              "light": "rgba(0, 0, 0, 0)"
+            },
+            "markdownDescription": "Default `{ \"dark\": \"rgba(0, 0, 0, 0)\", \"light\": \"rgba(0, 0, 0, 0)\" }`"
+          },
           "logmagnifier.highlightColors.color01": {
             "type": "object",
             "properties": {
@@ -508,6 +524,11 @@
       {
         "command": "logmagnifier.changeFilterColor",
         "title": "Change Color...",
+        "icon": "$(symbol-color)"
+      },
+      {
+        "command": "logmagnifier.changeFilterColor.color00",
+        "title": "Change color: color00",
         "icon": "$(symbol-color)"
       },
       {
