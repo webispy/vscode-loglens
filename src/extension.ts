@@ -238,6 +238,12 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	}));
 
+	// Refresh tree views when color theme changes to update icons
+	context.subscriptions.push(vscode.window.onDidChangeActiveColorTheme(() => {
+		wordTreeDataProvider.refresh();
+		regexTreeDataProvider.refresh();
+	}));
+
 	// Initial highlight
 	if (vscode.window.activeTextEditor) {
 		const editor = vscode.window.activeTextEditor;

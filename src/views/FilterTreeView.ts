@@ -26,7 +26,19 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
             const item = new vscode.TreeItem(element.name, state);
             item.contextValue = element.isEnabled ? 'filterGroupEnabled' : 'filterGroupDisabled';
             item.id = element.id;
-            item.iconPath = element.isEnabled ? new vscode.ThemeIcon('pass-filled') : new vscode.ThemeIcon('circle-large-outline');
+
+            // UX Improvement: Distinct Group Icons
+            const isDark = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
+            const strokeColor = isDark ? '#cccccc' : '#333333';
+            const dimmedColor = isDark ? '#555555' : '#cccccc';
+
+            const isEnabled = element.isEnabled;
+            const folderColor = isEnabled ? strokeColor : dimmedColor;
+            const overlayColor = isEnabled ? undefined : strokeColor;
+
+            const svg = this.generateGroupSvg(folderColor, overlayColor);
+            item.iconPath = vscode.Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
+
             item.description = `${element.filters.length} items`;
             return item;
         } else {
@@ -85,10 +97,19 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
                     const svg = this.generateIncludeSvg(fillColor, mode, element.id);
                     item.iconPath = vscode.Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
                 } else {
-                    item.iconPath = new vscode.ThemeIcon('pass-filled');
+                    // Fallback for enabled items without specific color
+                    if (this.mode === 'regex') {
+                        item.iconPath = new vscode.ThemeIcon('eye');
+                    } else {
+                        item.iconPath = new vscode.ThemeIcon('filter');
+                    }
                 }
             } else {
-                item.iconPath = new vscode.ThemeIcon('circle-large-outline');
+                // Distinct "Disabled/Hidden" icon - "OFF" text
+                const isDark = vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark;
+                const textColor = isDark ? '#808080' : '#808080';
+                const svg = this.generateOffSvg(textColor);
+                item.iconPath = vscode.Uri.parse(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
             }
 
             return item;
@@ -194,6 +215,45 @@ export class FilterTreeDataProvider implements vscode.TreeDataProvider<TreeItem>
         }
 
         this.filterManager.moveFilter(activeGroup.id, targetGroup.id, activeFilterItem.id, targetItem.id, 'after');
+    }
+
+    private generateGroupSvg(folderColor: string, overlayColor?: string): string {
+        const folderPath = `<path d="M7.5 2.5 L9.5 4.5 H14.5 V13.5 H1.5 V2.5 H7.5 Z" fill="none" stroke="${folderColor}" stroke-width="1" stroke-linejoin="round" />`;
+
+        if (!overlayColor) {
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${folderPath}</svg>`;
+        }
+
+        // Mask (Cutout) to hide folder lines behind the overlay
+        // Overlay center is at (12, 12) (8 offset + 8 center * 0.5 scale = 12)
+        // Radius 4.5 ensures a small gap around the 16*0.5=8px icon
+        const mask = `
+            <defs>
+                <mask id="cutout-mask">
+                    <rect width="100%" height="100%" fill="white"/>
+                    <circle cx="12" cy="12" r="5" fill="black"/>
+                </mask>
+            </defs>
+        `;
+
+        // Apply mask to folder path
+        const maskedFolderPath = `<g mask="url(#cutout-mask)">${folderPath}</g>`;
+
+        // Overlay: Circle-slash (Ban) icon, scaled 0.5 and positioned at bottom-right
+        const banPath = `<path d="M11.8746 3.41833C9.51718 1.42026 5.98144 1.53327 3.75736 3.75736C1.53327 5.98144 1.42026 9.51719 3.41833 11.8746L11.8746 3.41833ZM12.5817 4.12543L4.12543 12.5817C6.48282 14.5797 10.0186 14.4667 12.2426 12.2426C14.4667 10.0186 14.5797 6.48282 12.5817 4.12543ZM3.05025 3.05025C5.78392 0.316582 10.2161 0.316582 12.9497 3.05025C15.6834 5.78392 15.6834 10.2161 12.9497 12.9497C10.2161 15.6834 5.78392 15.6834 3.05025 12.9497C0.316583 10.2161 0.316582 5.78392 3.05025 3.05025Z" fill="${overlayColor}" transform="translate(8, 8) scale(0.5)"/>`;
+
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+            ${mask}
+            ${maskedFolderPath}
+            ${banPath}
+        </svg>`;
+    }
+
+    private generateOffSvg(textColor: string): string {
+        // Text "OFF" centered, no border
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+            <text x="50%" y="11.5" font-family="Arial, sans-serif" font-size="7" font-weight="bold" fill="${textColor}" text-anchor="middle">OFF</text>
+        </svg>`;
     }
 
     private generateExcludeSvg(fillColor: string, strokeColor: string, style: string): string {
