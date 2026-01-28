@@ -58,10 +58,10 @@ A powerful log analysis tool for Visual Studio Code, featuring advanced log filt
 6. **Quick Access**: Use the **Quick Access** view to toggle editor settings (Word Wrap, Minimap, Sticky Scroll) or check the current file size.
     - *Tip*: Click the **File Size** item to cycle through units (Bytes, KB, MB).
 
-### ADB Logcat View
+### ADB Devices View
 
 1.  **Devices**:
-    - The "ADB Logcat" view automatically lists connected Android devices.
+    - The "ADB Devices" view automatically lists connected Android devices.
     - **Select Target App**: Click the "Target app" item under a device to filter logs by a specific running application.
 2.  **Control Device**:
     - **Screenshot**: Capture and view a screenshot of the device immediately.
